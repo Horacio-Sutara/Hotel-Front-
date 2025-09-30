@@ -3,70 +3,61 @@
   justify-content: space-between;
   align-items: center;
   padding: 15px 40px;
+  background-color: #f5f5dc; /* Beige */
   border-bottom: 2px solid #3cb371;
-  background-color: #f5f5dc;
-  position: relative;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
 }
 
 .logo {
+  font-size: 22px;
   font-weight: bold;
-  font-size: 20px;
   color: #3cb371;
 }
 
-.nav ul {
-  list-style: none;
+.nav-links {
   display: flex;
   gap: 20px;
-  margin: 0;
-  padding: 0;
 }
 
-.nav a {
+.nav-links a {
   text-decoration: none;
   color: #3cb371;
   font-weight: bold;
-  font-size: 14px;
+  transition: color 0.3s;
 }
 
-.nav a:hover {
+.nav-links a:hover {
   color: #2e8b57;
 }
 
-/* Botón hamburguesa oculto en escritorio */
-.hamburger {
+/* Estilo hamburguesa */
+.menu-toggle {
   display: none;
-  font-size: 24px;
-  background: none;
-  border: none;
-  color: #3cb371;
+  font-size: 26px;
   cursor: pointer;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-  .nav {
+  .nav-links {
     display: none;
+    flex-direction: column;
+    background-color: #f5f5dc;
     position: absolute;
     top: 60px;
-    right: 0;
-    background: #f5f5dc;
-    width: 100%;
-    border-top: 2px solid #3cb371;
+    right: 40px;
+    padding: 15px;
+    border: 2px solid #3cb371;
+    border-radius: 10px;
   }
 
-  .nav.open {
-    display: block;
+  .nav-links.open {
+    display: flex;
   }
 
-  .nav ul {
-    flex-direction: column;
-    align-items: center;
-    padding: 20px 0;
-    gap: 15px;
-  }
-
-  .hamburger {
+  .menu-toggle {
     display: block;
   }
 }
