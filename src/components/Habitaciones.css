@@ -42,8 +42,16 @@
   background: #fff;
   border-radius: 15px;
   overflow: hidden;
-  box-shadow: 0 4px 10px rgba(60,179,113,0.1); /* sombra verde claro */
-  border: 2px solid #3cb371; /* borde verde claro */
+  box-shadow: 0 4px 10px rgba(60,179,113,0.1);
+  border: 2px solid #3cb371;
+  position: relative;
+}
+
+.habitacion-img-bloque {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
 }
 
 .habitacion-card img {
@@ -51,8 +59,8 @@
   height: 230px;
   object-fit: cover;
   border-radius: 15px 0 0 15px;
-  border: 4px solid #3cb371; /* borde verde claro más grueso */
-  background-color: #f5f5dc; /* fondo beige si la imagen no carga */
+  border: 4px solid #3cb371;
+  background-color: #f5f5dc;
   display: block;
 }
 
@@ -85,4 +93,20 @@
 .habitacion-info ul li {
   margin-bottom: 5px;
   color: #2e8b57; /* verde más oscuro */
+}
+
+.habitacion-precio {
+  margin-top: 10px;
+  color: #3cb371;
+  font-size: 1.25rem;
+  font-weight: bold;
+  background: #fff;
+  padding: 8px 18px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(60,179,113,0.08);
+  border: 2px solid #3cb371;
+  z-index: 2;
+  position: static;
+  left: unset;
+  bottom: unset;
 }

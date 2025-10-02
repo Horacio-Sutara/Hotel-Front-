@@ -73,7 +73,13 @@ export default function Habitaciones() {
 
       {/* Tarjeta de habitación */}
       <div className="habitacion-card">
-        <img src={habitacion.img} alt={habitacion.nombre} />
+        <div className="habitacion-img-bloque">
+          <img src={habitacion.img} alt={habitacion.nombre} />
+          {/* Precio justo debajo de la imagen */}
+          <div className="habitacion-precio">
+            {tipo === "estandar" ? "$120 USD por noche" : "$180 USD por noche"}
+          </div>
+        </div>
         <div className="habitacion-info">
           <h3>{habitacion.nombre}</h3>
           <p>

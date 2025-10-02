@@ -1,0 +1,113 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: #f5f1e3;
+}
+
+.login-container {
+  min-height: 100vh;
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* Centra verticalmente */
+  align-items: center;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.hotel-title {
+  text-align: center;
+  color: #2e7d32;
+  margin-bottom: 20px;
+  margin-top: 40px;
+}
+
+.login-box {
+  display: flex;
+  background-color: #5ec495;
+  border-radius: 10px;
+  padding: 40px 30px;
+  width: 100%;
+  max-width: 900px;
+  min-height: 400px;
+  justify-content: space-between;
+  gap: 20px;
+  box-sizing: border-box;
+  position: relative;
+  align-items: stretch; /* Asegura que las columnas y la línea ocupen todo el alto */
+}
+
+.login-divider {
+  width: 4px;
+  min-height: 250px; /* Fuerza un alto mínimo visible */
+  background: none;
+  border-left: 4px dashed #f5f5dc; /* más gruesa y beige claro */
+  align-self: stretch; /* Ocupa todo el alto de la caja */
+  margin: 0 14px;
+}
+
+.login-form,
+.login-info {
+  flex: 1;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.login-form h2,
+.login-info h2 {
+  margin-bottom: 15px;
+}
+
+.login-form input {
+  display: block;
+  width: 100%;
+  margin-bottom: 15px;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  background: #f5f1e3;
+  color: #3cb371; /* Color verde claro para el texto */
+}
+
+.btn-brown {
+  background-color: #6d4c41;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.btn-brown:hover {
+  background-color: #5d4037;
+}
+
+.link {
+  color: white;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Responsive para pantallas pequeñas */
+@media (max-width: 700px) {
+  .login-box {
+    flex-direction: column;
+    padding: 30px 10px;
+    min-height: unset;
+  }
+  .login-divider {
+    width: 96%;
+    height: 4px;
+    border-left: none;
+    border-top: 4px dashed #f5f5dc; /* más gruesa en móvil */
+    margin: 18px 0;
+    align-self: center;
+    min-height: unset;
+  }
+  .hotel-title {
+    margin-top: 20px;
+  }
+}
