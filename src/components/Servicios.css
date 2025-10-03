@@ -2,6 +2,8 @@
   padding: 50px 20px;
   background-color: #f5f5dc;
   color: #3cb371;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 .servicios h2 {

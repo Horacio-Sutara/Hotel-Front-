@@ -1,37 +1,35 @@
 .hero {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   padding: 60px;
   gap: 40px;
   background-color: #f5f5dc; /* beige claro */
   color: #3cb371; /* verde claro */
   min-height: calc(100vh - 70px); /* ocupa casi toda la pantalla */
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 .hero-image img {
-  max-width: 100%;
+  max-width: 440px;
   height: auto;
   border-radius: 8px;
   display: block;
 }
 
 
-.hero-text {
-  max-width: 500px;
-}
-
 .hero-text h1 {
-  font-size: 42px;
+  font-size: 54px;
   color: #3cb371;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+  font-weight: bold;
 }
-
 .hero-text p {
-  font-size: 22px;
-  font-weight: 500;
+  font-size: 28px;
+  font-weight: 600;
   color: #3cb371;
-  margin-bottom: 30px;
+  margin-bottom: 36px;
 }
 
 .btn-reserva {

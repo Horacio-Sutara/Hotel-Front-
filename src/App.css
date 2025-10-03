@@ -2,9 +2,10 @@
 body {
   margin: 0;
   font-family: Arial, sans-serif;
-  background-color: #f5f5dc; /* beige claro */
+  background-color: #f5f5dc !important; /* beige claro */
   color: #3cb371; /* verde claro */
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 /* Navbar */
@@ -42,8 +43,14 @@ body {
   color: #2e8b57; /* verde más oscuro al pasar */
 }
 
-html, body {
+html {
   margin: 0;
   padding: 0;
   overflow-x: hidden; /* evita scroll horizontal */
+  background-color: #f5f5dc !important;
+  min-height: 100vh;
+}
+
+* {
+  box-sizing: border-box;
 }

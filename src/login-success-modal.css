@@ -1,0 +1,48 @@
+.login-success-modal {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5000;
+}
+
+.login-success-contenido {
+  background: #5ec495;
+  border-radius: 12px;
+  padding: 32px 24px;
+  min-width: 320px;
+  color: white;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: modalFadeInLogin 0.6s cubic-bezier(0.4,0.7,0.2,1) both;
+}
+
+@keyframes modalFadeInLogin {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.login-cargando-icono {
+  width: 32px;
+  height: 32px;
+  border: 4px solid #f5f1e3;
+  border-top: 4px solid #6d4c41;
+  border-radius: 50%;
+  animation: spin 1.2s linear infinite;
+  margin-bottom: 18px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

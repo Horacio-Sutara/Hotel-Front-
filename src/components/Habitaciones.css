@@ -3,6 +3,8 @@
   padding: 50px 20px;
   background-color: #f5f5dc; /* beige claro como App.css */
   color: #3cb371; /* verde claro */
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 .habitaciones h2 {

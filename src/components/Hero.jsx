@@ -1,7 +1,7 @@
 import "./Hero.css";
 import hotelImage from "../assets/Hotel.jpeg"; // aquí va la foto del hotel
 
-export default function Hero() {
+export default function Hero({ onReservaClick }) {
   return (
     <section className="hero">
       <div className="hero-image">
@@ -12,7 +12,7 @@ export default function Hero() {
         <p>
           “Un refugio de tranquilidad donde cada detalle está pensado para tu bienestar.”
         </p>
-        <button className="btn-reserva">Empezar una reservación</button>
+        <button className="btn-reserva" onClick={onReservaClick}>Empezar una reservación</button>
       </div>
     </section>
   );

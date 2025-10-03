@@ -1,16 +1,21 @@
 import { useState } from "react";
+import UsuarioIcono from "./UsuarioIcono";
 import "./Navbar.css";
 
-export default function Navbar({ onLoginClick }) {
+export default function Navbar({ onLoginClick, usuario, onCambiarUsuario }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <header className="navbar">
       <div className="logo-bloque">
         <div className="logo">Hotel Ramolia</div>
-        <button className="btn-login" onClick={onLoginClick}>
-          Iniciar sesión
-        </button>
+        {usuario ? (
+          <UsuarioIcono usuario={usuario} onCambiarUsuario={onCambiarUsuario} />
+        ) : (
+          <button className="btn-login" onClick={onLoginClick}>
+            Iniciar sesión
+          </button>
+        )}
       </div>
 
       {/* Botón hamburguesa */}
