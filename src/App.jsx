@@ -65,7 +65,7 @@ function App() {
         <>
           <Navbar onLoginClick={handleAbrirLogin} usuario={usuario} onCambiarUsuario={handleCerrarSesion} />
           <section id="inicio">
-            <Hero />
+            <Hero usuario={usuario} />
           </section>
           <section id="ubicacion">
             <Ubicacion />

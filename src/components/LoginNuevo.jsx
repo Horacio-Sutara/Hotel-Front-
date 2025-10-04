@@ -8,8 +8,12 @@ export default function LoginNuevo({ onRegisterClick, onLoginSuccess }) {
 
   function handleSubmit(e) {
     e.preventDefault();
+    // Determinar tipo de usuario según el email
+  let tipo = "cliente";
+    if (email.endsWith(".com.op")) tipo = "operador";
+    else if (email.endsWith(".com.ad")) tipo = "administrador";
     // Aquí iría la lógica de login
-    if (onLoginSuccess) onLoginSuccess({ usuario, email });
+    if (onLoginSuccess) onLoginSuccess({ usuario, email, tipo });
   }
 
   return (
