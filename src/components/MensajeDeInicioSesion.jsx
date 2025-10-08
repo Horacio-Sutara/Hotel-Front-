@@ -1,5 +1,3 @@
-import React from "react";
-import "./MensajeDeInicioSesion.css";
 
 export default function MensajeDeInicioSesion({ mostrar }) {
   if (!mostrar) return null;

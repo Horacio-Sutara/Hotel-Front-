@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import L from "leaflet";
-import "./Ubicacion.css";
 
 export default function Ubicacion() {
   useEffect(() => {

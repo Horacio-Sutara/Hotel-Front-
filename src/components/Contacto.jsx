@@ -1,4 +1,3 @@
-import './Contacto.css';
 
 export default function Contacto() {
   return (

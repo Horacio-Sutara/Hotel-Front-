@@ -1,7 +1,6 @@
 import { useState } from "react";
 import habitacionEstandar from "../assets/Habitacion Estandar.jpg";
 import habitacionDeluxe from "../assets/Habitacion Deluxe.jpeg";
-import './Habitaciones.css';
 export default function Habitaciones() {
   const [tipo, setTipo] = useState("estandar");
 

@@ -1,5 +1,4 @@
-import React, { useState } from "react";
-import "./UsuarioIcono.css";
+import  { useState } from "react";
 
 export default function UsuarioIcono({ usuario, onCambiarUsuario }) {
   const [showModal, setShowModal] = useState(false);

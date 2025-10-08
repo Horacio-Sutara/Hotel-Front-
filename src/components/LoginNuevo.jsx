@@ -1,5 +1,5 @@
 import { useState } from "react";
-import "./LoginNuevo.css";
+
 
 export default function LoginNuevo({ onRegisterClick, onLoginSuccess }) {
   const [usuario, setUsuario] = useState("");

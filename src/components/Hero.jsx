@@ -1,4 +1,3 @@
-import "./Hero.css";
 import hotelImage from "../assets/Hotel.jpeg"; // aquí va la foto del hotel
 import MensajeDeInicioSesion from "./MensajeDeInicioSesion";
 import Reservas from "./Reservas";

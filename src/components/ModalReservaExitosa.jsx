@@ -1,5 +1,3 @@
-import React from "react";
-import "./ModalReservaExitosa.css";
 
 export default function ModalReservaExitosa({ mostrar, onClose }) {
   if (!mostrar) return null;

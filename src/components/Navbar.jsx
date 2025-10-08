@@ -1,6 +1,5 @@
 import { useState } from "react";
 import UsuarioIcono from "./UsuarioIcono";
-import "./Navbar.css";
 
 export default function Navbar({ onLoginClick, usuario, onCambiarUsuario }) {
   const [isOpen, setIsOpen] = useState(false);

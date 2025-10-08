@@ -1,5 +1,4 @@
 import { useState } from "react";
-import "./RegistroNuevo.css";
 
 export default function RegistroNuevo({ onVolverLogin }) {
   const [form, setForm] = useState({

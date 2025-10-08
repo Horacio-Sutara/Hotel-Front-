@@ -1,6 +1,5 @@
-import React, { useState } from "react";
+import  { useState } from "react";
 import ModalReservaExitosa from "./ModalReservaExitosa";
-import "./Reservas.css";
 
 export default function Reservas({ onCerrar }) {
   const [checkin, setCheckin] = useState("");

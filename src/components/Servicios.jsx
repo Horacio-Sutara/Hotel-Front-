@@ -5,7 +5,6 @@ import foto3 from "../assets/salon de juegos.jpg";
 import foto4 from "../assets/salon de spa.jpg";
 import foto5 from "../assets/Gimnasio.jpg";      
 import foto6 from "../assets/lavanderia.jpg";         
-import './Servicios.css';
 
 const serviciosHotel = [
   "Recepción 24 horas",
