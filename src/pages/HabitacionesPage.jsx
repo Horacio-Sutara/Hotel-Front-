@@ -106,27 +106,22 @@ export default function Habitaciones() {
     return "Desconocida";
   };
 
-  // formato agrupado: Amex 4-6-5, otros 4-4-4-4
   const formatCardNumber = (numbersOnly, type) => {
     if (!numbersOnly) return "";
     if (type === "Amex") {
-      // 4-6-5
       const part1 = numbersOnly.slice(0, 4);
       const part2 = numbersOnly.slice(4, 10);
       const part3 = numbersOnly.slice(10, 15);
       return [part1, part2, part3].filter(Boolean).join(" ");
     } else {
-      // grupos de 4
       return numbersOnly.match(/.{1,4}/g)?.join(" ") ?? numbersOnly;
     }
   };
 
-  // Luhn para validar número de tarjeta
   const luhnCheck = (numStr) => {
     if (!numStr) return false;
     let sum = 0;
     let shouldDouble = false;
-    // recorrer de derecha a izquierda
     for (let i = numStr.length - 1; i >= 0; i--) {
       let digit = parseInt(numStr[i], 10);
       if (shouldDouble) {
@@ -139,24 +134,19 @@ export default function Habitaciones() {
     return sum % 10 === 0;
   };
 
-  // longitud requerida según tipo (sin espacios)
   const requiredCardLength = (type) => {
     if (type === "Amex") return 15;
     if (type === "Visa" || type === "Mastercard" || type === "Discover") return 16;
-    return 16; // por defecto 16
+    return 16;
   };
 
-  // CVV requerido
   const requiredCvvLength = (type) => (type === "Amex" ? 4 : 3);
 
   // ---------- Handlers de inputs de pago ----------
   const handleCardInput = (e) => {
-    // quitar todo lo que no sea dígito
     let raw = e.target.value.replace(/\D/g, "");
-    // detectamos tipo según raw
     const type = detectCardType(raw);
     const maxLen = requiredCardLength(type);
-    // cortar hasta la longitud máxima
     if (raw.length > maxLen) raw = raw.slice(0, maxLen);
 
     const formatted = formatCardNumber(raw, type);
@@ -168,35 +158,27 @@ export default function Habitaciones() {
       tarjetaFormateada: formatted,
       cardType: type,
       cardValid,
-      // actualizamos cvvValid porque cvv length puede depender del tipo
       cvvValid: p.cvv ? p.cvv.length === requiredCvvLength(type) : false,
     }));
   };
 
   const handleExpiryInput = (e) => {
-    // permitir solo números y añadir / automáticamente después de 2 digitos
     let raw = e.target.value.replace(/\D/g, "");
-    if (raw.length > 4) raw = raw.slice(0, 4); // MMYY
+    if (raw.length > 4) raw = raw.slice(0, 4);
     let formatted = raw;
     if (raw.length >= 3) {
-      formatted = raw.slice(0, 2) + "/" + raw.slice(2);
-    } else if (raw.length >= 2 && e.nativeEvent && e.nativeEvent.inputType !== "deleteContentBackward") {
-      // si llegan 2 dígitos y el usuario sigue tipeando, añadimos la barra
       formatted = raw.slice(0, 2) + "/" + raw.slice(2);
     } else if (raw.length === 2) {
       formatted = raw + "/";
     }
-    // validación básica fecha MM/AA
     let expiryValid = false;
     if (formatted.length === 5) {
       const mm = parseInt(formatted.slice(0, 2), 10);
       const yy = parseInt(formatted.slice(3), 10);
       expiryValid = mm >= 1 && mm <= 12;
-      // chequeo de expiración real (opcional): convertir a fin de mes y comparar con fecha actual
       if (expiryValid) {
         const now = new Date();
         const fullYear = 2000 + yy;
-        // tomar último día del mes
         const expDate = new Date(fullYear, mm, 0, 23, 59, 59);
         expiryValid = expDate >= new Date(now.getFullYear(), now.getMonth(), 1);
       }
@@ -205,7 +187,6 @@ export default function Habitaciones() {
   };
 
   const handleCvvInput = (e) => {
-    // solo dígitos, limitar por tipo de tarjeta detectado
     const digits = e.target.value.replace(/\D/g, "");
     const max = requiredCvvLength(pago.cardType);
     const value = digits.slice(0, max);
@@ -213,19 +194,14 @@ export default function Habitaciones() {
     setPago((p) => ({ ...p, cvv: value, cvvValid }));
   };
 
-  // ---------- Validar todo antes de confirmar ----------
-  const isPaymentReady = () => {
-    return pago.cardValid && pago.expiryValid && pago.cvvValid;
-  };
+  const isPaymentReady = () => pago.cardValid && pago.expiryValid && pago.cvvValid;
 
   const handleConfirmarPago = () => {
     if (!isPaymentReady()) {
       alert("Por favor completa correctamente los datos de la tarjeta.");
       return;
     }
-    // Aquí enviarías los datos al backend / pasarela
     alert("¡Reserva y pago confirmados!");
-    // Reset simple y volver a selección
     setPaso(0);
     setPago({
       tarjetaRaw: "",
@@ -237,10 +213,23 @@ export default function Habitaciones() {
       expiryValid: false,
       cvvValid: false,
     });
+    setUsuario({ nombre: "", apellido: "", dni: "", telefono: "", email: "" });
   };
 
-  // ---------- Resto del componente (selector, modal, pasos) ----------
   const pasosTexto = ["Revisar Reserva", "Datos Personales", "Método de Pago"];
+
+  // ---------- Validaciones datos personales ----------
+  const isNombreValido = /^[a-zA-Z]{2,50}$/.test(usuario.nombre);
+  const isApellidoValido = /^[a-zA-Z]{2,50}$/.test(usuario.apellido);
+  const isDniValido = /^\d{8}$/.test(usuario.dni);
+  const isTelefonoValido = /^\d{8,15}$/.test(usuario.telefono);
+  const isEmailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(usuario.email);
+  const datosPersonalesValidos =
+    isNombreValido &&
+    isApellidoValido &&
+    isDniValido &&
+    isTelefonoValido &&
+    isEmailValido;
 
   return (
     <section className="min-h-screen bg-zinc-950 text-white py-0 px-0">
@@ -294,8 +283,7 @@ export default function Habitaciones() {
                 {habitacion.nombre}
               </h3>
               <p className="text-gray-300">
-                <strong className="text-white">Tipo de cama:</strong>{" "}
-                {habitacion.cama}
+                <strong className="text-white">Tipo de cama:</strong> {habitacion.cama}
               </p>
 
               <div>
@@ -344,15 +332,15 @@ export default function Habitaciones() {
         </div>
       )}
 
-      {/* Modal calendario */}
+      {/* Modal calendario (paso 0) */}
       {mostrarCalendario && (
         <div className="fixed inset-0 bg-black/80 flex justify-center items-center z-50">
           <div className="bg-zinc-900 p-8 rounded-2xl shadow-lg w-[90%] md:w-[600px] text-white">
-            <h3 className="text-2xl font-bold mb-4 text-center">
-              Consultar Disponibilidad
-            </h3>
+            <h3 className="text-2xl font-bold mb-4 text-center">Consultar Disponibilidad</h3>
             <Calendar
-              onChange={(value) => setReserva({ ...reserva, fechas: value })}
+              onChange={(dates) =>
+                setReserva((r) => ({ ...r, fechas: dates }))
+              }
               selectRange={true}
               value={reserva.fechas}
               tileClassName={tileClassName}
@@ -391,10 +379,7 @@ export default function Habitaciones() {
                 Cancelar
               </button>
               <button
-                onClick={() => {
-                  setMostrarCalendario(false);
-                  setPaso(1);
-                }}
+                onClick={() => { setMostrarCalendario(false); setPaso(1); }}
                 className="bg-white hover:bg-gray-400 text-black px-5 py-2 rounded-lg"
               >
                 Continuar
@@ -404,165 +389,237 @@ export default function Habitaciones() {
         </div>
       )}
 
-      {/* Proceso de reserva con barra de pasos */}
+      {/* Pasos de reserva */}
       {paso > 0 && (
-        <div className="fixed inset-0 bg-black/80 flex justify-center items-start z-50 p-6 pt-20">
-          <div className="bg-zinc-900 rounded-2xl shadow-lg p-8 w-full max-w-lg">
-            {/* Barra de pasos */}
-            <div className="flex justify-between mb-6">
-              {pasosTexto.map((texto, index) => (
-                <div key={index} className="flex-1 text-center">
-                  <div
-                    className={`w-10 h-10 mx-auto rounded-full flex items-center justify-center ${
-                      paso - 1 === index
-                        ? "bg-white text-black font-bold"
-                        : "bg-gray-600 text-white"
-                    }`}
-                  >
-                    {index + 1}
-                  </div>
-                  <p className="text-sm mt-2 text-gray-300">{texto}</p>
-                </div>
-              ))}
+        <div className="container mx-auto max-w-xl px-6 py-20 space-y-6">
+          <h2 className="text-3xl font-bold text-white mb-6 text-center">
+            {pasosTexto[paso - 1]}
+          </h2>
+
+          {/* Paso 1: Revisar reserva */}
+          {paso === 1 && (
+            <div className="bg-zinc-900 p-6 rounded-2xl space-y-4 text-gray-200">
+              <p>
+                <strong>Habitación:</strong> {habitacion.nombre}
+              </p>
+              <p>
+                <strong>Fechas:</strong>{" "}
+                {Array.isArray(reserva.fechas)
+                  ? reserva.fechas.map(d => d.toLocaleDateString()).join(" - ")
+                  : reserva.fechas.toLocaleDateString()}
+              </p>
+              <p>
+                <strong>Adultos:</strong> {reserva.adultos}
+              </p>
+              <p>
+                <strong>Niños:</strong> {reserva.ninos}
+              </p>
+              <div className="flex justify-between mt-6">
+                <button
+                  onClick={() => setPaso(0)}
+                  className="bg-gray-600 px-5 py-2 rounded-lg hover:bg-gray-700"
+                >
+                  Volver
+                </button>
+                <button
+                  onClick={() => setPaso(2)}
+                  className="bg-white px-5 py-2 rounded-lg hover:bg-gray-400 text-black"
+                >
+                  Aceptar
+                </button>
+              </div>
             </div>
+          )}
 
-            {/* Contenido paso */}
-            {paso === 1 && (
-              <div className="space-y-4">
-                <p>
-                  <strong>Fechas:</strong>{" "}
-                  {reserva.fechas[0].toLocaleDateString()} -{" "}
-                  {reserva.fechas[1].toLocaleDateString()}
-                </p>
-                <p>
-                  <strong>Adultos:</strong> {reserva.adultos}
-                </p>
-                <p>
-                  <strong>Niños:</strong> {reserva.ninos}
-                </p>
-                <div className="flex justify-end mt-4 gap-4">
-                  <button
-                    onClick={() => setPaso(0)}
-                    className="bg-gray-600 px-5 py-2 rounded-lg hover:bg-gray-700"
-                  >
-                    Volver
-                  </button>
-                  <button
-                    onClick={() => setPaso(2)}
-                    className="bg-white text-black px-5 py-2 rounded-lg hover:bg-gray-400"
-                  >
-                    Aceptar
-                  </button>
-                </div>
+          {/* Paso 2: Datos personales */}
+          {paso === 2 && (
+            <div className="bg-zinc-900 p-6 rounded-2xl space-y-4">
+              {/* Nombre */}
+              <div>
+                <input
+                  type="text"
+                  placeholder="Nombre"
+                  value={usuario.nombre}
+                  onChange={(e) =>
+                    setUsuario({ ...usuario, nombre: e.target.value })
+                  }
+                  className={`w-full px-3 py-2 rounded-lg border ${
+                    isNombreValido ? "border-green-500" : "border-red-500"
+                  } bg-zinc-800 text-white`}
+                />
+                {!isNombreValido && usuario.nombre.length > 0 && (
+                  <small className="text-red-500">2-50 letras</small>
+                )}
               </div>
-            )}
 
-            {paso === 2 && (
-              <div className="space-y-4">
-                {["nombre", "apellido", "dni", "telefono", "email"].map((field) => (
-                  <input
-                    key={field}
-                    type={field === "email" ? "email" : "text"}
-                    name={field}
-                    placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
-                    value={usuario[field]}
-                    onChange={(e) =>
-                      setUsuario({ ...usuario, [e.target.name]: e.target.value })
-                    }
-                    className="w-full bg-zinc-800 px-3 py-2 rounded-lg border border-zinc-700 text-white"
-                  />
-                ))}
-                <div className="flex justify-between mt-4">
-                  <button
-                    onClick={() => setPaso(1)}
-                    className="bg-gray-600 px-5 py-2 rounded-lg hover:bg-gray-700"
-                  >
-                    Volver
-                  </button>
-                  <button
-                    onClick={() => setPaso(3)}
-                    className="bg-white text-black px-5 py-2 rounded-lg hover:bg-gray-400"
-                  >
-                    Siguiente
-                  </button>
-                </div>
+              {/* Apellido */}
+              <div>
+                <input
+                  type="text"
+                  placeholder="Apellido"
+                  value={usuario.apellido}
+                  onChange={(e) =>
+                    setUsuario({ ...usuario, apellido: e.target.value })
+                  }
+                  className={`w-full px-3 py-2 rounded-lg border ${
+                    isApellidoValido ? "border-green-500" : "border-red-500"
+                  } bg-zinc-800 text-white`}
+                />
+                {!isApellidoValido && usuario.apellido.length > 0 && (
+                  <small className="text-red-500">2-50 letras</small>
+                )}
               </div>
-            )}
 
-            {paso === 3 && (
-              <div className="space-y-4">
-                <div>
-                  <label className="text-gray-300 text-sm">Número de tarjeta</label>
+              {/* DNI */}
+              <div>
+                <input
+                  type="text"
+                  placeholder="DNI"
+                  value={usuario.dni}
+                  onChange={(e) =>
+                    setUsuario({
+                      ...usuario,
+                      dni: e.target.value.replace(/\D/g, ""),
+                    })
+                  }
+                  className={`w-full px-3 py-2 rounded-lg border ${
+                    isDniValido ? "border-green-500" : "border-red-500"
+                  } bg-zinc-800 text-white`}
+                />
+                {!isDniValido && usuario.dni.length > 0 && (
+                  <small className="text-red-500">8 dígitos</small>
+                )}
+              </div>
+
+              {/* Teléfono */}
+              <div>
+                <input
+                  type="text"
+                  placeholder="Teléfono"
+                  value={usuario.telefono}
+                  onChange={(e) =>
+                    setUsuario({
+                      ...usuario,
+                      telefono: e.target.value.replace(/\D/g, ""),
+                    })
+                  }
+                  className={`w-full px-3 py-2 rounded-lg border ${
+                    isTelefonoValido ? "border-green-500" : "border-red-500"
+                  } bg-zinc-800 text-white`}
+                />
+                {!isTelefonoValido && usuario.telefono.length > 0 && (
+                  <small className="text-red-500">8-15 dígitos</small>
+                )}
+              </div>
+
+              {/* Email */}
+              <div>
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={usuario.email}
+                  onChange={(e) =>
+                    setUsuario({ ...usuario, email: e.target.value })
+                  }
+                  className={`w-full px-3 py-2 rounded-lg border ${
+                    isEmailValido ? "border-green-500" : "border-red-500"
+                  } bg-zinc-800 text-white`}
+                />
+                {!isEmailValido && usuario.email.length > 0 && (
+                  <small className="text-red-500">Email inválido</small>
+                )}
+              </div>
+
+              <div className="flex justify-between mt-4">
+                <button
+                  onClick={() => setPaso(1)}
+                  className="bg-gray-600 px-5 py-2 rounded-lg hover:bg-gray-700"
+                >
+                  Volver
+                </button>
+                <button
+                  onClick={() => setPaso(3)}
+                  disabled={!datosPersonalesValidos}
+                  className={`px-5 py-2 rounded-lg ${
+                    datosPersonalesValidos
+                      ? "bg-white text-black hover:bg-gray-400"
+                      : "bg-gray-700 text-gray-400 cursor-not-allowed"
+                  }`}
+                >
+                  Siguiente
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Paso 3: Pago */}
+          {paso === 3 && (
+            <div className="bg-zinc-900 p-6 rounded-2xl space-y-4">
+              <div>
+                <input
+                  type="text"
+                  placeholder="Número de tarjeta"
+                  value={pago.tarjetaFormateada}
+                  onChange={handleCardInput}
+                  className={`w-full px-3 py-2 rounded-lg border ${
+                    pago.cardValid ? "border-green-500" : "border-red-500"
+                  } bg-zinc-800 text-white`}
+                />
+                {pago.cardType && (
+                  <small className="text-gray-300">
+                    Tipo: {pago.cardType}
+                  </small>
+                )}
+              </div>
+              <div className="flex gap-4">
+                <div className="w-1/2 flex flex-col">
                   <input
                     type="text"
-                    inputMode="numeric"
-                    placeholder="1234 5678 9012 3456"
-                    value={pago.tarjetaFormateada}
-                    onChange={handleCardInput}
-                    className="w-full bg-zinc-800 px-3 py-2 rounded-lg border border-zinc-700 text-white"
+                    placeholder="MM/AA"
+                    value={pago.vencimiento}
+                    onChange={handleExpiryInput}
+                    className={`px-3 py-2 rounded-lg border ${
+                      pago.expiryValid ? "border-green-500" : "border-red-500"
+                    } bg-zinc-800 text-white`}
                   />
-                  <div className="flex items-center justify-between mt-2">
-                    <small className="text-sm text-gray-400">
-                      {pago.cardType ? `Tipo: ${pago.cardType}` : "Tipo: —"}
-                    </small>
-                    <small className={`text-sm ${pago.cardValid ? "text-green-400" : "text-yellow-300"}`}>
-                      {pago.cardValid ? "Número válido" : "Ingresá número completo"}
-                    </small>
-                  </div>
+                  {!pago.expiryValid && pago.vencimiento.length === 5 && (
+                    <small className="text-red-500 mt-1">Fecha no válida</small>
+                  )}
                 </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-gray-300 text-sm">Vencimiento</label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="MM/AA"
-                      value={pago.vencimiento}
-                      onChange={handleExpiryInput}
-                      className="w-full bg-zinc-800 px-3 py-2 rounded-lg border border-zinc-700 text-white"
-                    />
-                    {!pago.expiryValid && pago.vencimiento.length === 5 && (
-                      <small className="text-red-500">Fecha inválida o vencida</small>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="text-gray-300 text-sm">
-                      CVV <span className="text-gray-400 text-xs">({requiredCvvLength(pago.cardType)} dígitos)</span>
-                    </label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      placeholder={pago.cardType === "Amex" ? "4 dígitos" : "3 dígitos"}
-                      value={pago.cvv}
-                      onChange={handleCvvInput}
-                      className="w-full bg-zinc-800 px-3 py-2 rounded-lg border border-zinc-700 text-white"
-                    />
-                    {!pago.cvvValid && pago.cvv.length > 0 && (
-                      <small className="text-red-500">CVV incompleto</small>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex justify-between mt-4">
-                  <button
-                    onClick={() => setPaso(2)}
-                    className="bg-gray-600 px-5 py-2 rounded-lg hover:bg-gray-700"
-                  >
-                    Volver
-                  </button>
-                  <button
-                    onClick={handleConfirmarPago}
-                    disabled={!isPaymentReady()}
-                    className={`px-5 py-2 rounded-lg ${isPaymentReady() ? "bg-white text-black hover:bg-gray-300" : "bg-gray-700 text-gray-400 cursor-not-allowed"}`}
-                  >
-                    Confirmar
-                  </button>
+                <div className="w-1/2 flex flex-col">
+                  <input
+                    type="text"
+                    placeholder="CVV"
+                    value={pago.cvv}
+                    onChange={handleCvvInput}
+                    className={`px-3 py-2 rounded-lg border ${
+                      pago.cvvValid ? "border-green-500" : "border-red-500"
+                    } bg-zinc-800 text-white`}
+                  />
                 </div>
               </div>
-            )}
-          </div>
+
+              <div className="flex justify-between mt-4">
+                <button
+                  onClick={() => setPaso(2)}
+                  className="bg-gray-600 px-5 py-2 rounded-lg hover:bg-gray-700"
+                >
+                  Volver
+                </button>
+                <button
+                  onClick={handleConfirmarPago}
+                  disabled={!isPaymentReady()}
+                  className={`px-5 py-2 rounded-lg ${
+                    isPaymentReady()
+                      ? "bg-white text-black hover:bg-gray-400"
+                      : "bg-gray-700 text-gray-400 cursor-not-allowed"
+                  }`}
+                >
+                  Confirmar
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </section>
