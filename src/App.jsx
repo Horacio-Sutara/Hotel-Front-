@@ -4,8 +4,8 @@ import Home from "./pages/Home";
 import ServiciosPage from "./pages/ServiciosPage";
 import HabitacionesPage from "./pages/HabitacionesPage";
 import ContactoPage from "./pages/ContactoPage";
-
- 
+import LoginPage from "./pages/Login"; // 🔹 nueva página
+import RegisterPage from "./pages/Registro"; // 🔹 nueva página
 
 function App() {
   return (
@@ -17,6 +17,10 @@ function App() {
           <Route path="/servicios" element={<ServiciosPage />} />
           <Route path="/habitaciones" element={<HabitacionesPage />} />
           <Route path="/contacto" element={<ContactoPage />} />
+
+          {/* 🔹 nuevas rutas para login y registro */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
         </Routes>
       </div>
     </div>
