@@ -1,3 +1,4 @@
+// src/pages/Login.jsx
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 
@@ -11,21 +12,18 @@ export default function Login() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const validarEmail = (email) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  };
+  const validarEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Validaciones simples
     if (!form.usuario || !form.email || !form.contraseña) {
       setMensaje("Todos los campos son obligatorios");
       return;
     }
 
-    if (form.usuario.trim().split(" ").length < 1 || form.usuario.length < 3) {
-      setMensaje("El usuario debe tener al menos 3 caracteres y una palabra");
+    if (form.usuario.length < 3) {
+      setMensaje("El usuario debe tener al menos 3 caracteres");
       return;
     }
 
@@ -34,7 +32,25 @@ export default function Login() {
       return;
     }
 
-    // Simula el login
+    // 🔹 Caso Operador (usuario especial)
+    if (
+      form.usuario === "Horacio" &&
+      form.email === "prueba@gmail.com" &&
+      form.contraseña === "1234"
+    ) {
+      localStorage.setItem(
+        "usuario",
+        JSON.stringify({
+          username: form.usuario,
+          email: form.email,
+          tipo: "Operador",
+        })
+      );
+      navigate("/operador");
+      return;
+    }
+
+    // 🔹 Caso cliente común
     localStorage.setItem(
       "usuario",
       JSON.stringify({
@@ -44,8 +60,8 @@ export default function Login() {
       })
     );
 
-    navigate("/"); // redirige al inicio
-    window.location.reload(); // refresca navbar
+    navigate("/");
+    window.location.reload();
   };
 
   return (
