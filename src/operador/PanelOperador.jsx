@@ -48,15 +48,16 @@ export default function PanelOperador() {
           {mostrarMenu && (
             <div className="absolute right-0 mt-3 w-64 bg-zinc-900 border border-zinc-700 rounded-lg shadow-lg p-4 text-gray-300 z-50">
               <p className="text-sm mb-1">
-                <span className="font-semibold text-white">Usuario:</span>{" "}
-                {user?.username}
+                <span className="font-semibold text-white">Nombre:</span>{" "}
+                {user?.nombre}
               </p>
               <p className="text-sm mb-1">
                 <span className="font-semibold text-white">Email:</span>{" "}
                 {user?.email}
               </p>
               <p className="text-sm mb-3">
-                <span className="font-semibold text-white">Tipo:</span> Operador
+                <span className="font-semibold text-white">Tipo:</span>{" "}
+                {user?.tipo}
               </p>
 
               <div className="flex justify-between mt-2">

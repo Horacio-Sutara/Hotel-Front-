@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import L from "leaflet";
 import portadaContacto from "../assets/fotodecontacto.png";
@@ -11,8 +10,11 @@ export default function ContactoPage() {
       existingMap._leaflet_id = null;
     }
 
-    // Crear mapa centrado en Buenos Aires
-    const map = L.map("map").setView([-34.6037, -58.3816], 13);
+    // Coordenadas fijas: Salta, Argentina
+    const coordenadasHotel = [-24.740727, -65.391735];
+
+    // Crear mapa centrado en las coordenadas fijas
+    const map = L.map("map").setView(coordenadasHotel, 15);
 
     // Capa base
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -21,26 +23,12 @@ export default function ContactoPage() {
     }).addTo(map);
 
     // Marcador principal
-    L.marker([-34.6037, -58.3816])
+    L.marker(coordenadasHotel)
       .addTo(map)
       .bindPopup("📍 Aquí está el Hotel Ramolia")
       .openPopup();
 
-    // Intentar ubicar al usuario
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const { latitude, longitude } = pos.coords;
-          map.setView([latitude, longitude], 15);
-          L.marker([latitude, longitude])
-            .addTo(map)
-            .bindPopup("📍 Tú estás aquí")
-            .openPopup();
-        },
-        () => console.warn("No se pudo obtener la ubicación del usuario")
-      );
-    }
-
+    // No se pide ubicación del usuario
     return () => map.remove();
   }, []);
 
@@ -54,6 +42,7 @@ export default function ContactoPage() {
           className="w-full h-full object-cover object-center"
         />
       </div>
+
       <div className="w-full flex flex-col items-center py-10">
         {/* Mapa */}
         <section className="w-full max-w-6xl text-center mb-12">
@@ -61,8 +50,8 @@ export default function ContactoPage() {
             ¿Dónde estamos?
           </h2>
           <p className="text-gray-400 mb-6">
-            Nos encontramos en el corazón de la ciudad, a pasos de todo lo que
-            necesitás.
+            Nos encontramos en el corazón de la ciudad de Salta, rodeados de
+            paisajes únicos y lugares turísticos.
           </p>
           <div
             id="map"
@@ -83,21 +72,31 @@ export default function ContactoPage() {
               onSubmit={(e) => {
                 e.preventDefault();
                 alert("Mensaje enviado ✅");
+                e.target.reset();
               }}
             >
               <input
                 type="text"
+                name="nombre"
                 placeholder="Tu nombre"
                 required
                 className="bg-gray-800 border border-gray-700 text-white p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-white"
               />
               <input
                 type="email"
+                name="email"
                 placeholder="Tu email"
                 required
                 className="bg-gray-800 border border-gray-700 text-white p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-white"
               />
+              <input
+                type="tel"
+                name="telefono"
+                placeholder="Tu teléfono (opcional)"
+                className="bg-gray-800 border border-gray-700 text-white p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-white"
+              />
               <textarea
+                name="mensaje"
                 placeholder="Escribe tu mensaje..."
                 rows={4}
                 required
@@ -123,7 +122,7 @@ export default function ContactoPage() {
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-green-500 text-xl">📍</span>
-                <span>Av. Corrientes 1234, Buenos Aires</span>
+                <span>Av. Corrientes 1234, Salta, Argentina</span>
               </div>
             </div>
           </div>
@@ -132,4 +131,3 @@ export default function ContactoPage() {
     </div>
   );
 }
-

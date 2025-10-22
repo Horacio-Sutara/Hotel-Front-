@@ -6,7 +6,7 @@ export default function Registro() {
   const [form, setForm] = useState({
     nombre: "",
     apellido: "",
-    usuario: "",
+    pais: "",
     email: "",
     dni: "",
     contraseña: "",
@@ -19,17 +19,30 @@ export default function Registro() {
   };
 
   const validarEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  const validarNombre = (nombre) => nombre.trim().split(" ").length >= 1 && nombre.length >= 3;
-  const validarDNI = (dni) => /^\d{8}$/.test(dni);
+  const validarNombre = (nombre) =>
+    nombre.trim().split(" ").length >= 1 && nombre.length >= 3;
+
+  const validarDNI = (dni, pais) => {
+    if (!/^\d+$/.test(dni)) return false; // solo números
+    switch (pais) {
+      case "Argentina":
+        return /^\d{8}$/.test(dni);
+      case "Chile":
+        return /^\d{9}$/.test(dni);
+      case "México":
+        return /^\d{10}$/.test(dni);
+      default:
+        return true; // otros países: cualquier número
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Validaciones básicas
     if (
       !form.nombre ||
       !form.apellido ||
-      !form.usuario ||
+      !form.pais ||
       !form.email ||
       !form.dni ||
       !form.contraseña ||
@@ -49,18 +62,15 @@ export default function Registro() {
       return;
     }
 
-    if (!validarNombre(form.usuario)) {
-      setMensaje("El usuario debe tener al menos una palabra y 3 caracteres");
-      return;
-    }
-
     if (!validarEmail(form.email)) {
       setMensaje("El email no tiene un formato válido");
       return;
     }
 
-    if (!validarDNI(form.dni)) {
-      setMensaje("El DNI debe tener exactamente 8 dígitos");
+    if (!validarDNI(form.dni, form.pais)) {
+      setMensaje(
+        `El DNI no es válido para ${form.pais}`
+      );
       return;
     }
 
@@ -73,7 +83,7 @@ export default function Registro() {
     localStorage.setItem(
       "usuario",
       JSON.stringify({
-        username: form.usuario,
+        pais: form.pais,
         email: form.email,
         tipo: "Cliente",
       })
@@ -117,14 +127,19 @@ export default function Registro() {
           </div>
         </div>
 
-        <label className="block mb-2 text-gray-300">Usuario</label>
-        <input
-          type="text"
-          name="usuario"
-          value={form.usuario}
+        <label className="block mb-2 text-gray-300">País</label>
+        <select
+          name="pais"
+          value={form.pais}
           onChange={handleChange}
           className="w-full p-3 rounded bg-gray-800 text-white mb-4 focus:ring-2 focus:ring-gray-600 outline-none"
-        />
+        >
+          <option value="">Seleccionar país</option>
+          <option value="Argentina">Argentina</option>
+          <option value="Chile">Chile</option>
+          <option value="México">México</option>
+          <option value="Otro">Otro</option>
+        </select>
 
         <label className="block mb-2 text-gray-300">Email</label>
         <input
@@ -141,6 +156,15 @@ export default function Registro() {
           name="dni"
           value={form.dni}
           onChange={handleChange}
+          placeholder={
+            form.pais === "Argentina"
+              ? "8 dígitos"
+              : form.pais === "Chile"
+              ? "9 dígitos"
+              : form.pais === "México"
+              ? "10 dígitos"
+              : "Número"
+          }
           className="w-full p-3 rounded bg-gray-800 text-white mb-4 focus:ring-2 focus:ring-gray-600 outline-none"
         />
 

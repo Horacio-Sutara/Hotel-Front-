@@ -1,11 +1,10 @@
-// src/pages/Login.jsx
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [form, setForm] = useState({ usuario: "", email: "", contraseña: "" });
+  const [form, setForm] = useState({ nombre: "", email: "", contraseña: "" });
   const [mensaje, setMensaje] = useState("");
 
   const handleChange = (e) => {
@@ -17,13 +16,13 @@ export default function Login() {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    if (!form.usuario || !form.email || !form.contraseña) {
+    if (!form.nombre || !form.email || !form.contraseña) {
       setMensaje("Todos los campos son obligatorios");
       return;
     }
 
-    if (form.usuario.length < 3) {
-      setMensaje("El usuario debe tener al menos 3 caracteres");
+    if (form.nombre.length < 3) {
+      setMensaje("El nombre debe tener al menos 3 caracteres");
       return;
     }
 
@@ -32,16 +31,16 @@ export default function Login() {
       return;
     }
 
-    // 🔹 Caso Operador (usuario especial)
+    // 🔹 Caso Operador (nombre especial)
     if (
-      form.usuario === "Horacio" &&
+      form.nombre === "Horacio" &&
       form.email === "prueba@gmail.com" &&
       form.contraseña === "1234"
     ) {
       localStorage.setItem(
         "usuario",
         JSON.stringify({
-          username: form.usuario,
+          nombre: form.nombre,
           email: form.email,
           tipo: "Operador",
         })
@@ -54,7 +53,7 @@ export default function Login() {
     localStorage.setItem(
       "usuario",
       JSON.stringify({
-        username: form.usuario,
+        nombre: form.nombre,
         email: form.email,
         tipo: "Cliente",
       })
@@ -77,11 +76,11 @@ export default function Login() {
         onSubmit={handleSubmit}
         className="bg-gray-900 p-8 rounded-2xl shadow-lg w-full max-w-md"
       >
-        <label className="block mb-3 text-gray-300">Usuario</label>
+        <label className="block mb-3 text-gray-300">Nombre</label>
         <input
           type="text"
-          name="usuario"
-          value={form.usuario}
+          name="nombre"
+          value={form.nombre}
           onChange={handleChange}
           className="w-full p-3 rounded bg-gray-800 text-white mb-4 focus:ring-2 focus:ring-gray-600 outline-none"
         />

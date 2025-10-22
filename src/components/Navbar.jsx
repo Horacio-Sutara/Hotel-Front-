@@ -81,8 +81,8 @@ const Navbar = () => {
               {mostrarMenu && (
                 <div className="absolute right-0 mt-2 w-56 bg-zinc-900 border border-zinc-700 rounded-lg shadow-lg p-4 text-gray-300">
                   <p className="text-sm mb-1">
-                    <span className="font-semibold text-white">Usuario:</span>{" "}
-                    {user.username}
+                    <span className="font-semibold text-white">Nombre:</span>{" "}
+                    {user.nombre}
                   </p>
                   <p className="text-sm mb-1">
                     <span className="font-semibold text-white">Email:</span>{" "}
