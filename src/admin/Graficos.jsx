@@ -29,7 +29,7 @@ export default function Graficos() {
 
   return (
     <div className="bg-zinc-900 p-6 rounded-lg shadow-lg">
-      <h2 className="text-2xl font-semibold mb-4 text-white">📈 Estadísticas del Hotel</h2>
+      <h2 className="text-2xl font-semibold mb-4 text-white"> Estadísticas del Hotel</h2>
 
       {/* Gráfico de ingresos */}
       <div className="mb-10">

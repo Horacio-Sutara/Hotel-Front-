@@ -1,91 +1,190 @@
 import { useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
 
-export default function CrudHabitaciones() {
+export default function HabitacionesCrud() {
   const [habitaciones, setHabitaciones] = useState([
-    { id: 1, nombre: "Habitación Estándar", precio: 50000, tipo: "Estándar" },
-    { id: 2, nombre: "Habitación Deluxe", precio: 80000, tipo: "Deluxe" },
-    { id: 3, nombre: "Habitación Suite", precio: 120000, tipo: "Suite" },
+    { id: 1, nombre: "Habitación 1", tipo: "Estándar", descripcion: "Cómoda habitación estándar con cama doble." },
+    { id: 2, nombre: "Habitación 2", tipo: "Deluxe", descripcion: "Habitación Deluxe con vista al jardín." },
+    { id: 3, nombre: "Habitación 3", tipo: "Suite", descripcion: "Suite amplia con sala de estar y jacuzzi." },
+    { id: 4, nombre: "Habitación 4", tipo: "Estándar", descripcion: "Habitación funcional para estadías cortas." },
+    { id: 5, nombre: "Habitación 5", tipo: "Deluxe", descripcion: "Habitación Deluxe con balcón privado." },
+    { id: 6, nombre: "Habitación 6", tipo: "Suite", descripcion: "Suite ejecutiva con escritorio y minibar." },
+    { id: 7, nombre: "Habitación 7", tipo: "Estándar", descripcion: "Habitación cómoda con cama queen." },
+    { id: 8, nombre: "Habitación 8", tipo: "Deluxe", descripcion: "Habitación con detalles de lujo y vista panorámica." },
+    { id: 9, nombre: "Habitación 9", tipo: "Suite", descripcion: "Suite con diseño moderno y amenities premium." },
+    { id: 10, nombre: "Habitación 10", tipo: "Estándar", descripcion: "Habitación simple con baño privado." },
   ]);
-  const [nueva, setNueva] = useState({ nombre: "", precio: "", tipo: "" });
 
-  const agregarHabitacion = () => {
-    if (!nueva.nombre || !nueva.precio || !nueva.tipo) return;
-    const id = habitaciones.length + 1;
-    setHabitaciones([...habitaciones, { id, ...nueva }]);
-    setNueva({ nombre: "", precio: "", tipo: "" });
+  const [nuevaHabitacion, setNuevaHabitacion] = useState({
+    nombre: "",
+    tipo: "",
+    descripcion: "",
+  });
+
+  const [editandoId, setEditandoId] = useState(null);
+  const [editData, setEditData] = useState({ nombre: "", tipo: "", descripcion: "" });
+
+  const handleAgregar = () => {
+    if (!nuevaHabitacion.nombre || !nuevaHabitacion.tipo || !nuevaHabitacion.descripcion) {
+      alert("Por favor, completa todos los campos.");
+      return;
+    }
+
+    const nueva = {
+      id: habitaciones.length + 1,
+      ...nuevaHabitacion,
+    };
+
+    setHabitaciones([...habitaciones, nueva]);
+    setNuevaHabitacion({ nombre: "", tipo: "", descripcion: "" });
   };
 
-  const eliminarHabitacion = (id) => {
+  const handleEliminar = (id) => {
     setHabitaciones(habitaciones.filter((h) => h.id !== id));
   };
 
-  return (
-    <div>
-      <h2 className="text-2xl font-semibold mb-6 text-white">CRUD de Habitaciones</h2>
+  const handleEditar = (habitacion) => {
+    setEditandoId(habitacion.id);
+    setEditData({ nombre: habitacion.nombre, tipo: habitacion.tipo, descripcion: habitacion.descripcion });
+  };
 
-      <div className="mb-6 bg-zinc-900 p-4 rounded-lg shadow">
-        <h3 className="text-gray-300 mb-3 font-medium">Agregar nueva habitación</h3>
-        <div className="flex flex-wrap gap-4">
+  const handleGuardarEdicion = () => {
+    setHabitaciones(
+      habitaciones.map((h) =>
+        h.id === editandoId ? { ...h, ...editData } : h
+      )
+    );
+    setEditandoId(null);
+    setEditData({ nombre: "", tipo: "", descripcion: "" });
+  };
+
+  return (
+    <div className="max-w-5xl mx-auto p-6">
+      <h1 className="text-3xl font-bold mb-6 text-center text-white">CRUD de Habitaciones</h1>
+
+      {/* Formulario de nueva habitación */}
+      <div className="bg-zinc-900 shadow-md rounded-2xl p-5 mb-6">
+        <h2 className="text-xl font-semibold mb-4">Agregar nueva habitación</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <input
             type="text"
-            placeholder="Nombre"
-            value={nueva.nombre}
-            onChange={(e) => setNueva({ ...nueva, nombre: e.target.value })}
-            className="bg-zinc-800 text-white px-3 py-2 rounded w-48 border border-zinc-700 focus:outline-none"
+            placeholder="Nombre de habitación"
+            className="border rounded-lg p-2"
+            value={nuevaHabitacion.nombre}
+            onChange={(e) => setNuevaHabitacion({ ...nuevaHabitacion, nombre: e.target.value })}
           />
-          <input
-            type="number"
-            placeholder="Precio"
-            value={nueva.precio}
-            onChange={(e) => setNueva({ ...nueva, precio: e.target.value })}
-            className="bg-zinc-800 text-white px-3 py-2 rounded w-36 border border-zinc-700 focus:outline-none"
-          />
-          <input
-            type="text"
-            placeholder="Tipo"
-            value={nueva.tipo}
-            onChange={(e) => setNueva({ ...nueva, tipo: e.target.value })}
-            className="bg-zinc-800 text-white px-3 py-2 rounded w-36 border border-zinc-700 focus:outline-none"
-          />
-          <button
-            onClick={agregarHabitacion}
-            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-white"
+          <select
+            className="border rounded-lg p-2"
+            value={nuevaHabitacion.tipo}
+            onChange={(e) => setNuevaHabitacion({ ...nuevaHabitacion, tipo: e.target.value })}
           >
-            <Plus size={16} /> Agregar
-          </button>
+            <option value="">Seleccionar tipo</option>
+            <option value="Estándar">Estándar</option>
+            <option value="Deluxe">Deluxe</option>
+            <option value="Suite">Suite</option>
+          </select>
+          <input
+            type="text"
+            placeholder="Descripción"
+            className="border rounded-lg p-2"
+            value={nuevaHabitacion.descripcion}
+            onChange={(e) => setNuevaHabitacion({ ...nuevaHabitacion, descripcion: e.target.value })}
+          />
         </div>
+        <button
+          onClick={handleAgregar}
+          className="mt-4 bg-green-500 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
+        >
+          Agregar Habitación
+        </button>
       </div>
 
-      <table className="w-full text-left border-collapse">
-        <thead className="bg-zinc-800 text-gray-400">
-          <tr>
-            <th className="p-3">ID</th>
-            <th className="p-3">Nombre</th>
-            <th className="p-3">Tipo</th>
-            <th className="p-3">Precio</th>
-            <th className="p-3 text-center">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {habitaciones.map((h) => (
-            <tr key={h.id} className="border-b border-zinc-700 hover:bg-zinc-800/60">
-              <td className="p-3">{h.id}</td>
-              <td className="p-3">{h.nombre}</td>
-              <td className="p-3">{h.tipo}</td>
-              <td className="p-3">${h.precio.toLocaleString()}</td>
-              <td className="p-3 text-center">
-                <button
-                  onClick={() => eliminarHabitacion(h.id)}
-                  className="text-red-500 hover:text-red-600 transition"
-                >
-                  <Trash2 size={18} />
-                </button>
-              </td>
+      {/* Tabla de habitaciones */}
+      <div className="overflow-x-auto bg-zinc-900 shadow-md rounded-2xl">
+        <table className="min-w-full border-collapse">
+          <thead className="bg-white text-black">
+            <tr>
+              <th className="border p-3 text-left">ID</th>
+              <th className="border p-3 text-left">Nombre</th>
+              <th className="border p-3 text-left">Tipo</th>
+              <th className="border p-3 text-left">Descripción</th>
+              <th className="border p-3 text-center">Acciones</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {habitaciones.map((h) => (
+              <tr key={h.id} className="hover:bg-zinc-800/60">
+                <td className="border p-3">{h.id}</td>
+
+                <td className="border p-3">
+                  {editandoId === h.id ? (
+                    <input
+                      type="text"
+                      className="border rounded p-1 w-full"
+                      value={editData.nombre}
+                      onChange={(e) => setEditData({ ...editData, nombre: e.target.value })}
+                    />
+                  ) : (
+                    h.nombre
+                  )}
+                </td>
+
+                <td className="border p-3">
+                  {editandoId === h.id ? (
+                    <select
+                      className="border rounded p-1 w-full"
+                      value={editData.tipo}
+                      onChange={(e) => setEditData({ ...editData, tipo: e.target.value })}
+                    >
+                      <option value="Estándar">Estándar</option>
+                      <option value="Deluxe">Deluxe</option>
+                      <option value="Suite">Suite</option>
+                    </select>
+                  ) : (
+                    h.tipo
+                  )}
+                </td>
+
+                <td className="border p-3">
+                  {editandoId === h.id ? (
+                    <input
+                      type="text"
+                      className="border rounded p-1 w-full"
+                      value={editData.descripcion}
+                      onChange={(e) => setEditData({ ...editData, descripcion: e.target.value })}
+                    />
+                  ) : (
+                    h.descripcion
+                  )}
+                </td>
+
+                <td className="border p-3 text-center">
+                  {editandoId === h.id ? (
+                    <button
+                      onClick={handleGuardarEdicion}
+                      className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded mr-2"
+                    >
+                      Guardar
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleEditar(h)}
+                      className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded mr-2"
+                    >
+                      Editar
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleEliminar(h.id)}
+                    className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
+                  >
+                    Eliminar
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

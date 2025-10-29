@@ -1,6 +1,7 @@
 import { useState } from "react";
 import habitacionEstandar from "../assets/Habitacion Estandar.jpg";
 import habitacionDeluxe from "../assets/Habitacion Deluxe.jpeg";
+import habitacionSuite from "../assets/Habitacion Suite.webp"; // 🔹 nueva imagen suite
 import portadaHabitaciones from "../assets/fotodehabitacion.png";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
@@ -14,7 +15,7 @@ export default function Habitaciones() {
     adultos: 1,
     ninos: 0,
   });
-  const [paso, setPaso] = useState(0); // 0 = seleccionar habitación, 1-3 = proceso de reserva
+  const [paso, setPaso] = useState(0);
   const [usuario, setUsuario] = useState({
     nombre: "",
     apellido: "",
@@ -23,7 +24,6 @@ export default function Habitaciones() {
     email: "",
   });
 
-  // pago: tarjeta sin formatear en tarjetaRaw, tarjetaFormateada para mostrar, expiry mm/aa, cvv, cardType, valid flags
   const [pago, setPago] = useState({
     tarjetaRaw: "",
     tarjetaFormateada: "",
@@ -83,6 +83,29 @@ export default function Habitaciones() {
         "Recepción y concierge.",
       ],
       precio: "$180.000 por noche",
+    },
+    suite: {
+      nombre: "Suite Premium",
+      img: habitacionSuite,
+      cama: "Cama King Size + Living",
+      caracteristicas: [
+        "Suite de 55 m² con vista panorámica a la ciudad.",
+        "Climatización inteligente con control digital.",
+        "Televisor 65\" UHD y sistema de sonido envolvente.",
+        "Wi-Fi ultra rápido + escritorio ejecutivo.",
+      ],
+      detalles: [
+        "Baño con jacuzzi y amenities premium.",
+        "Living con sofá, mesa de centro y minibar completo.",
+        "Balcón privado amueblado.",
+        "Caja fuerte, cafetera Nespresso y batas de baño.",
+      ],
+      servicios: [
+        "Acceso a spa, gimnasio y piscina climatizada.",
+        "Desayuno incluido en el restaurante gourmet.",
+        "Room service 24 hs y valet parking.",
+      ],
+      precio: "$250.000 por noche",
     },
   };
 
@@ -233,7 +256,6 @@ export default function Habitaciones() {
 
   return (
     <section className="min-h-screen bg-zinc-950 text-white py-0 px-0">
-      {/* Imagen de portada */}
       <div className="w-full h-64 md:h-80 lg:h-96 overflow-hidden">
         <img
           src={portadaHabitaciones}
@@ -242,7 +264,6 @@ export default function Habitaciones() {
         />
       </div>
 
-      {/* Selector principal (paso 0) */}
       {paso === 0 && (
         <div className="container mx-auto max-w-5xl px-6 py-20">
           <h2 className="text-5xl font-bold text-center mb-10 text-white-400">
@@ -261,8 +282,10 @@ export default function Habitaciones() {
             >
               <option value="estandar">Habitación Estándar</option>
               <option value="deluxe">Habitación Deluxe</option>
+              <option value="suite">Habitación Suite</option> {/* 🔹 nueva opción */}
             </select>
           </div>
+
 
           <div className="bg-zinc-900 rounded-2xl shadow-lg overflow-hidden flex flex-col md:flex-row">
             <div className="relative md:w-1/2">

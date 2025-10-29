@@ -48,6 +48,24 @@ export default function Login() {
       navigate("/operador");
       return;
     }
+    
+     // 🔹 Caso Administrador
+  if (
+    form.nombre === "Pablo" &&
+    form.email === "admin@gmail.com" &&
+    form.contraseña === "1234"
+  ) {
+    localStorage.setItem(
+      "usuario",
+      JSON.stringify({
+        nombre: form.nombre,
+        email: form.email,
+        tipo: "Administrador",
+      })
+    );
+    navigate("/admin"); // Aquí asumo que la ruta del admin es /admin
+    return;
+  }
 
     // 🔹 Caso cliente común
     localStorage.setItem(
