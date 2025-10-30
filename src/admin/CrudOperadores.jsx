@@ -33,6 +33,7 @@ export default function CrudOperadores() {
             onChange={(e) => setNuevo({ ...nuevo, nombre: e.target.value })}
             className="bg-zinc-800 text-white px-3 py-2 rounded border border-zinc-700 focus:outline-none"
           />
+          
           <input
             type="email"
             placeholder="Email"

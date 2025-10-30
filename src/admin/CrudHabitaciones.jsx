@@ -63,7 +63,7 @@ export default function HabitacionesCrud() {
 
       {/* Formulario de nueva habitación */}
       <div className="bg-zinc-900 shadow-md rounded-2xl p-5 mb-6">
-        <h2 className="text-xl font-semibold mb-4">Agregar nueva habitación</h2>
+        <h2 className="text-xl font-semibold mb-4 text-white">Agregar nueva habitación</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <input
             type="text"
@@ -73,7 +73,7 @@ export default function HabitacionesCrud() {
             onChange={(e) => setNuevaHabitacion({ ...nuevaHabitacion, nombre: e.target.value })}
           />
           <select
-            className="border rounded-lg p-2"
+            className="border rounded-lg p-2 bg-zinc-900 text-white "
             value={nuevaHabitacion.tipo}
             onChange={(e) => setNuevaHabitacion({ ...nuevaHabitacion, tipo: e.target.value })}
           >
@@ -99,7 +99,7 @@ export default function HabitacionesCrud() {
       </div>
 
       {/* Tabla de habitaciones */}
-      <div className="overflow-x-auto bg-zinc-900 shadow-md rounded-2xl">
+      <div className="overflow-x-auto bg-zinc-900 shadow-md ">
         <table className="min-w-full border-collapse">
           <thead className="bg-white text-black">
             <tr>
@@ -112,14 +112,14 @@ export default function HabitacionesCrud() {
           </thead>
           <tbody>
             {habitaciones.map((h) => (
-              <tr key={h.id} className="hover:bg-zinc-800/60">
+              <tr key={h.id} className="hover:bg-zinc-800/60 text-white">
                 <td className="border p-3">{h.id}</td>
 
                 <td className="border p-3">
                   {editandoId === h.id ? (
                     <input
                       type="text"
-                      className="border rounded p-1 w-full"
+                      className="border rounded p-1 w-full text-white"
                       value={editData.nombre}
                       onChange={(e) => setEditData({ ...editData, nombre: e.target.value })}
                     />
@@ -131,7 +131,7 @@ export default function HabitacionesCrud() {
                 <td className="border p-3">
                   {editandoId === h.id ? (
                     <select
-                      className="border rounded p-1 w-full"
+                      className="border rounded p-1 w-full bg-zinc-900 text-white "
                       value={editData.tipo}
                       onChange={(e) => setEditData({ ...editData, tipo: e.target.value })}
                     >
@@ -148,7 +148,7 @@ export default function HabitacionesCrud() {
                   {editandoId === h.id ? (
                     <input
                       type="text"
-                      className="border rounded p-1 w-full"
+                      className="border rounded p-1 w-full text-white"
                       value={editData.descripcion}
                       onChange={(e) => setEditData({ ...editData, descripcion: e.target.value })}
                     />

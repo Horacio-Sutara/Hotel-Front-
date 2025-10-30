@@ -70,8 +70,24 @@ export default function ContactoPage() {
             <form
               className="flex flex-col space-y-4"
               onSubmit={(e) => {
+
+                fetch("http://127.0.0.1:5000/api/consultas",{
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    nombre: e.target.nombre.value,
+                    email: e.target.email.value,
+                    telefono: e.target.telefono.value,
+                    mensaje: e.target.mensaje.value,
+                    estado: "PENDIENTE",
+                  }),
+
+                })
+
+
                 e.preventDefault();
-                alert("Mensaje enviado ✅");
                 e.target.reset();
               }}
             >

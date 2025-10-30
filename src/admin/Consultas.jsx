@@ -1,78 +1,95 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Consultas() {
-  const [filtro, setFiltro] = useState("");
-  const [resultados, setResultados] = useState([]);
+  const [consultas, setConsultas] = useState([]);
+  const [mostrarNoRespondidas, setMostrarNoRespondidas] = useState(false);
 
-  const datosEjemplo = [
-    { id: 1, habitacion: "101", operador: "María", estado: "Ocupada", monto: 45000 },
-    { id: 2, habitacion: "102", operador: "Luis", estado: "Libre", monto: 0 },
-    { id: 3, habitacion: "103", operador: "Ana", estado: "Reservada", monto: 30000 },
-    { id: 4, habitacion: "104", operador: "Carlos", estado: "Ocupada", monto: 52000 },
-  ];
+  useEffect(() => {
+    fetch("http://127.0.0.1:5000/api/consultas")
+      .then((res) => res.json())
+      .then((data) => setConsultas(data))
+      .catch((err) => console.error("Error al cargar consultas:", err));
+  }, []);
 
-  const manejarBusqueda = (e) => {
-    e.preventDefault();
-    if (!filtro.trim()) {
-      setResultados(datosEjemplo);
-      return;
-    }
-    const filtrados = datosEjemplo.filter(
-      (d) =>
-        d.habitacion.includes(filtro) ||
-        d.operador.toLowerCase().includes(filtro.toLowerCase()) ||
-        d.estado.toLowerCase().includes(filtro.toLowerCase())
-    );
-    setResultados(filtrados);
-  };
+  // Filtrado según el botón activado
+  const consultasFiltradas = mostrarNoRespondidas
+    ? consultas.filter((c) => c.estado === "PENDIENTE")
+    : consultas;
 
   return (
-    <div className="bg-zinc-900 p-6 rounded-lg shadow-lg">
-      <h2 className="text-2xl font-semibold mb-4 text-white">🔍 Consultas Parametrizadas</h2>
+    <div className="bg-zinc-900 p-8 rounded-lg shadow-lg">
+      <h2 className="text-3xl font-semibold mb-6 text-white text-center">
+        Consultas
+      </h2>
 
-      <form
-        onSubmit={manejarBusqueda}
-        className="flex items-center gap-3 mb-6"
-      >
-        <input
-          type="text"
-          placeholder="Buscar por habitación, operador o estado..."
-          className="flex-1 px-4 py-2 bg-zinc-800 border border-zinc-700 rounded text-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          value={filtro}
-          onChange={(e) => setFiltro(e.target.value)}
-        />
+      <div className="flex justify-end mb-6">
         <button
-          type="submit"
-          className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded transition"
+          onClick={() => setMostrarNoRespondidas(!mostrarNoRespondidas)}
+          className={`px-6 py-3 rounded text-white font-medium transition ${
+            mostrarNoRespondidas
+              ? "bg-emerald-600 hover:bg-emerald-700"
+              : "bg-zinc-700 hover:bg-zinc-600"
+          }`}
         >
-          Buscar
+          {mostrarNoRespondidas ? "Mostrar todas" : "Mostrar no respondidas"}
         </button>
-      </form>
+      </div>
 
-      {resultados.length > 0 ? (
-        <table className="w-full border border-zinc-700 text-gray-300">
-          <thead className="bg-zinc-800">
-            <tr>
-              <th className="py-2 border-b border-zinc-700">Habitación</th>
-              <th className="py-2 border-b border-zinc-700">Operador</th>
-              <th className="py-2 border-b border-zinc-700">Estado</th>
-              <th className="py-2 border-b border-zinc-700">Monto ($)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {resultados.map((r) => (
-              <tr key={r.id} className="hover:bg-zinc-800 transition">
-                <td className="py-2 text-center">{r.habitacion}</td>
-                <td className="py-2 text-center">{r.operador}</td>
-                <td className="py-2 text-center">{r.estado}</td>
-                <td className="py-2 text-center">{r.monto}</td>
+      {consultasFiltradas.length > 0 ? (
+        <div className="overflow-x-auto">
+          <table className="w-full border border-zinc-700 text-gray-300 text-lg">
+            <thead className="bg-zinc-800">
+              <tr>
+                <th className="py-4 px-6 border-b border-zinc-700 text-left">
+                  Email
+                </th>
+                <th className="py-4 px-6 border-b border-zinc-700 text-left">
+                  Nombre
+                </th>
+                <th className="py-4 px-6 border-b border-zinc-700 text-left">
+                  Teléfono
+                </th>
+                <th className="py-4 px-6 border-b border-zinc-700 text-left">
+                  Estado
+                </th>
+                <th className="py-4 px-6 border-b border-zinc-700 text-left">
+                  Mensaje
+                </th>
+                <th className="py-4 px-6 border-b border-zinc-700 text-left">
+                  Fecha Envío
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {consultasFiltradas.map((r) => (
+                <tr
+                  key={r.id}
+                  className="hover:bg-zinc-800 transition border-b border-zinc-800"
+                >
+                  <td className="py-4 px-6">{r.email}</td>
+                  <td className="py-4 px-6">{r.nombre}</td>
+                  <td className="py-4 px-6">{r.telefono || "N/A"}</td>
+                  <td
+                    className={`py-4 px-6 font-semibold ${
+                      r.estado === "PENDIENTE"
+                        ? "text-yellow-400"
+                        : "text-emerald-400"
+                    }`}
+                  >
+                    {r.estado}
+                  </td>
+                  <td className="py-4 px-6">{r.mensaje}</td>
+                  <td className="py-4 px-6">
+                    {new Date(r.fecha_envio).toLocaleString()}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : (
-        <p className="text-gray-400 text-center mt-4">
-          No se encontraron resultados. Intenta otra búsqueda.
+        <p className="text-gray-400 text-center mt-6 text-lg">
+          No hay consultas para mostrar.
         </p>
       )}
     </div>
