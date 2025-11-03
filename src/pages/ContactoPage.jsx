@@ -1,8 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import L from "leaflet";
 import portadaContacto from "../assets/fotodecontacto.png";
 
 export default function ContactoPage() {
+  const [enviando, setEnviando] = useState(false);
+  const [mensaje, setMensaje] = useState("");
+
   useEffect(() => {
     // Eliminar mapa previo (React Strict Mode)
     const existingMap = document.getElementById("map");
@@ -12,25 +15,54 @@ export default function ContactoPage() {
 
     // Coordenadas fijas: Salta, Argentina
     const coordenadasHotel = [-24.740727, -65.391735];
-
-    // Crear mapa centrado en las coordenadas fijas
     const map = L.map("map").setView(coordenadasHotel, 15);
 
-    // Capa base
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution:
         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(map);
 
-    // Marcador principal
     L.marker(coordenadasHotel)
       .addTo(map)
       .bindPopup("📍 Aquí está el Hotel Ramolia")
       .openPopup();
 
-    // No se pide ubicación del usuario
     return () => map.remove();
   }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (enviando) return; // Evita doble envío
+    setEnviando(true);
+    setMensaje("");
+
+    try {
+      const res = await fetch("http://127.0.0.1:5000/api/consultas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nombre: e.target.nombre.value,
+          email: e.target.email.value,
+          telefono: e.target.telefono.value,
+          mensaje: e.target.mensaje.value,
+          estado: "PENDIENTE",
+        }),
+      });
+
+      if (res.ok) {
+        setMensaje("Consulta enviada correctamente");
+        e.target.reset();
+      } else {
+        setMensaje("Error al enviar la consulta. Intenta nuevamente.");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      setMensaje("Error de conexión con el servidor.");
+    } finally {
+      setEnviando(false);
+    }
+  };
 
   return (
     <div className="bg-gray-950 text-gray-200 min-h-screen flex flex-col items-center py-0">
@@ -67,30 +99,7 @@ export default function ContactoPage() {
 
           <div className="bg-gray-900 p-8 rounded-2xl shadow-lg grid md:grid-cols-2 gap-10">
             {/* Formulario */}
-            <form
-              className="flex flex-col space-y-4"
-              onSubmit={(e) => {
-
-                fetch("http://127.0.0.1:5000/api/consultas",{
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({
-                    nombre: e.target.nombre.value,
-                    email: e.target.email.value,
-                    telefono: e.target.telefono.value,
-                    mensaje: e.target.mensaje.value,
-                    estado: "PENDIENTE",
-                  }),
-
-                })
-
-
-                e.preventDefault();
-                e.target.reset();
-              }}
-            >
+            <form className="flex flex-col space-y-4" onSubmit={handleSubmit}>
               <input
                 type="text"
                 name="nombre"
@@ -120,10 +129,19 @@ export default function ContactoPage() {
               />
               <button
                 type="submit"
-                className="bg-white hover:bg-gray-600 text-black font-medium py-2 rounded-lg transition"
+                disabled={enviando}
+                className={`bg-white text-black font-medium py-2 rounded-lg transition ${
+                  enviando
+                    ? "opacity-50 cursor-not-allowed"
+                    : "hover:bg-gray-600"
+                }`}
               >
-                Enviar
+                {enviando ? "Enviando..." : "Enviar"}
               </button>
+
+              {mensaje && (
+  <p className="text-center mt-3 text-green-500">{mensaje}</p>
+)}
             </form>
 
             {/* Información */}

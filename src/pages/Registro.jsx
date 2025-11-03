@@ -9,10 +9,12 @@ export default function Registro() {
     pais: "",
     email: "",
     dni: "",
+    telefono: "", // 🔹 Nuevo campo opcional
     contraseña: "",
     confirmar: "",
   });
   const [mensaje, setMensaje] = useState("");
+  const [enviando, setEnviando] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -23,7 +25,7 @@ export default function Registro() {
     nombre.trim().split(" ").length >= 1 && nombre.length >= 3;
 
   const validarDNI = (dni, pais) => {
-    if (!/^\d+$/.test(dni)) return false; // solo números
+    if (!/^\d+$/.test(dni)) return false;
     switch (pais) {
       case "Argentina":
         return /^\d{8}$/.test(dni);
@@ -32,12 +34,14 @@ export default function Registro() {
       case "México":
         return /^\d{10}$/.test(dni);
       default:
-        return true; // otros países: cualquier número
+        return true;
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (enviando) return;
 
     if (
       !form.nombre ||
@@ -48,7 +52,7 @@ export default function Registro() {
       !form.contraseña ||
       !form.confirmar
     ) {
-      setMensaje("Todos los campos son obligatorios");
+      setMensaje("Todos los campos obligatorios deben completarse");
       return;
     }
 
@@ -68,9 +72,7 @@ export default function Registro() {
     }
 
     if (!validarDNI(form.dni, form.pais)) {
-      setMensaje(
-        `El DNI no es válido para ${form.pais}`
-      );
+      setMensaje(`El DNI no es válido para ${form.pais}`);
       return;
     }
 
@@ -79,19 +81,55 @@ export default function Registro() {
       return;
     }
 
-    // Simula guardado
-    localStorage.setItem(
-      "usuario",
-      JSON.stringify({
-        pais: form.pais,
-        email: form.email,
-        tipo: "Cliente",
-      })
-    );
+    const userData = {
+      nombre: form.nombre,
+      apellido: form.apellido,
+      correo: form.email,
+      contraseña: form.contraseña,
+      tipo_documento: "DNI",
+      numero_documento: form.dni,
+      pais_emision: form.pais,
+      telefono: form.telefono || "", // 🔹 Solo se envía si existe
+      rol: "CLIENTE",
+    };
 
-    navigate("/login", {
-      state: { mensaje: "Registro exitoso. Debes iniciar sesión ahora." },
-    });
+    setEnviando(true);
+    setMensaje("");
+
+    try {
+      const response = await fetch("http://127.0.0.1:5000/api/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(userData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          setMensaje("Faltan datos en la petición.");
+        } else if (response.status === 402) {
+          setMensaje("Este correo ya está registrado.");
+        } else {
+          setMensaje(data.message || "Error al registrar el usuario.");
+        }
+        setEnviando(false);
+        return;
+      }
+
+      setMensaje("Registro exitoso, redirigiendo...");
+      setTimeout(() => {
+        navigate("/login", {
+          state: { mensaje: "Registro exitoso. Debes iniciar sesión ahora." },
+        });
+      }, 1000);
+    } catch (error) {
+      console.error("Error en el registro:", error);
+      setMensaje("No se pudo conectar con el servidor.");
+      setEnviando(false);
+    }
   };
 
   return (
@@ -112,7 +150,8 @@ export default function Registro() {
               name="nombre"
               value={form.nombre}
               onChange={handleChange}
-              className="w-full p-3 rounded bg-gray-800 text-white mb-4 focus:ring-2 focus:ring-gray-600 outline-none"
+              disabled={enviando}
+              className="w-full p-3 rounded bg-gray-800 text-white mb-4 focus:ring-2 focus:ring-gray-600 outline-none disabled:opacity-50"
             />
           </div>
           <div>
@@ -122,7 +161,8 @@ export default function Registro() {
               name="apellido"
               value={form.apellido}
               onChange={handleChange}
-              className="w-full p-3 rounded bg-gray-800 text-white mb-4 focus:ring-2 focus:ring-gray-600 outline-none"
+              disabled={enviando}
+              className="w-full p-3 rounded bg-gray-800 text-white mb-4 focus:ring-2 focus:ring-gray-600 outline-none disabled:opacity-50"
             />
           </div>
         </div>
@@ -132,12 +172,14 @@ export default function Registro() {
           name="pais"
           value={form.pais}
           onChange={handleChange}
-          className="w-full p-3 rounded bg-gray-800 text-white mb-4 focus:ring-2 focus:ring-gray-600 outline-none"
+          disabled={enviando}
+          className="w-full p-3 rounded bg-gray-800 text-white mb-4 focus:ring-2 focus:ring-gray-600 outline-none disabled:opacity-50"
         >
           <option value="">Seleccionar país</option>
           <option value="Argentina">Argentina</option>
           <option value="Chile">Chile</option>
           <option value="México">México</option>
+          <option value="Peru">Perú</option>
           <option value="Otro">Otro</option>
         </select>
 
@@ -147,7 +189,8 @@ export default function Registro() {
           name="email"
           value={form.email}
           onChange={handleChange}
-          className="w-full p-3 rounded bg-gray-800 text-white mb-4 focus:ring-2 focus:ring-gray-600 outline-none"
+          disabled={enviando}
+          className="w-full p-3 rounded bg-gray-800 text-white mb-4 focus:ring-2 focus:ring-gray-600 outline-none disabled:opacity-50"
         />
 
         <label className="block mb-2 text-gray-300">DNI</label>
@@ -156,6 +199,7 @@ export default function Registro() {
           name="dni"
           value={form.dni}
           onChange={handleChange}
+          disabled={enviando}
           placeholder={
             form.pais === "Argentina"
               ? "8 dígitos"
@@ -165,7 +209,19 @@ export default function Registro() {
               ? "10 dígitos"
               : "Número"
           }
-          className="w-full p-3 rounded bg-gray-800 text-white mb-4 focus:ring-2 focus:ring-gray-600 outline-none"
+          className="w-full p-3 rounded bg-gray-800 text-white mb-4 focus:ring-2 focus:ring-gray-600 outline-none disabled:opacity-50"
+        />
+
+        {/* 🔹 Campo opcional de teléfono */}
+        <label className="block mb-2 text-gray-300">Teléfono (opcional)</label>
+        <input
+          type="text"
+          name="telefono"
+          value={form.telefono}
+          onChange={handleChange}
+          disabled={enviando}
+          placeholder="Ej: +54 11 1234-5678"
+          className="w-full p-3 rounded bg-gray-800 text-white mb-4 focus:ring-2 focus:ring-gray-600 outline-none disabled:opacity-50"
         />
 
         <label className="block mb-2 text-gray-300">Contraseña</label>
@@ -174,7 +230,8 @@ export default function Registro() {
           name="contraseña"
           value={form.contraseña}
           onChange={handleChange}
-          className="w-full p-3 rounded bg-gray-800 text-white mb-4 focus:ring-2 focus:ring-gray-600 outline-none"
+          disabled={enviando}
+          className="w-full p-3 rounded bg-gray-800 text-white mb-4 focus:ring-2 focus:ring-gray-600 outline-none disabled:opacity-50"
         />
 
         <label className="block mb-2 text-gray-300">Confirmar contraseña</label>
@@ -183,14 +240,27 @@ export default function Registro() {
           name="confirmar"
           value={form.confirmar}
           onChange={handleChange}
-          className="w-full p-3 rounded bg-gray-800 text-white mb-6 focus:ring-2 focus:ring-gray-600 outline-none"
+          disabled={enviando}
+          className="w-full p-3 rounded bg-gray-800 text-white mb-6 focus:ring-2 focus:ring-gray-600 outline-none disabled:opacity-50"
         />
 
         <button
           type="submit"
-          className="w-full bg-white text-black font-semibold py-3 rounded-lg hover:bg-gray-300 transition-all"
+          disabled={enviando}
+          className={`w-full font-semibold py-3 rounded-lg transition-all ${
+            enviando
+              ? "bg-gray-400 text-gray-800 cursor-not-allowed"
+              : "bg-white text-black hover:bg-gray-300"
+          }`}
         >
-          Registrarse
+          {enviando ? (
+            <div className="flex justify-center items-center space-x-2">
+              <div className="w-4 h-4 border-2 border-gray-800 border-t-transparent rounded-full animate-spin"></div>
+              <span>Registrando...</span>
+            </div>
+          ) : (
+            "Registrarse"
+          )}
         </button>
       </form>
     </div>

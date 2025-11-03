@@ -13,7 +13,7 @@ export default function PanelAdmin() {
 
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem("usuario"));
-    if (storedUser && storedUser.tipo === "Administrador") {
+    if (storedUser && storedUser.tipo === "ADMINISTRADOR") {
       setUser(storedUser);
     } else {
       navigate("/login");

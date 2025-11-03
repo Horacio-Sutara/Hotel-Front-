@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import habitacionEstandar from "../assets/Habitacion Estandar.jpg";
 import habitacionDeluxe from "../assets/Habitacion Deluxe.jpeg";
-import habitacionSuite from "../assets/Habitacion Suite.webp"; // 🔹 nueva imagen suite
+import habitacionSuite from "../assets/Habitacion Suite.webp";
 import portadaHabitaciones from "../assets/fotodehabitacion.png";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
@@ -23,7 +23,6 @@ export default function Habitaciones() {
     telefono: "",
     email: "",
   });
-
   const [pago, setPago] = useState({
     tarjetaRaw: "",
     tarjetaFormateada: "",
@@ -36,90 +35,75 @@ export default function Habitaciones() {
   });
 
   const diasOcupados = ["2025-10-10", "2025-10-11", "2025-10-14", "2025-10-15"];
+  const pasosTexto = ["Revisar Reserva", "Datos Personales", "Método de Pago"];
 
-  const habitaciones = {
+  // ---------- Habitaciones predeterminadas ----------
+  const habitacionesPredeterminadas = {
     estandar: {
       nombre: "Habitación Estándar",
       img: habitacionEstandar,
-      cama: "Cama Queen",
-      caracteristicas: [
-        "Habitación de 25 m² con vista interior.",
-        "Aire acondicionado y calefacción.",
-        "Televisión de 32\" con cable.",
-        "Wi-Fi gratuito.",
-      ],
-      detalles: [
-        "Baño privado con ducha.",
-        "Armario, escritorio y silla.",
-        "Teléfono con llamadas locales.",
-        "Servicio de limpieza diario.",
-      ],
-      servicios: [
-        "Acceso al gimnasio.",
-        "Servicio a la habitación limitado.",
-        "Resguardo de equipaje.",
-      ],
+      descripcion: "Habitación cómoda para 2 personas con baño privado y Wi-Fi.",
       precio: "$120.000 por noche",
+      capacidad: 2,
     },
     deluxe: {
       nombre: "Habitación Deluxe",
       img: habitacionDeluxe,
-      cama: "Cama King",
-      caracteristicas: [
-        "Habitación de 35 m² con balcón y vista al jardín.",
-        "Aire acondicionado y calefacción.",
-        "Televisión de 50\" con cable.",
-        "Wi-Fi de alta velocidad.",
-      ],
-      detalles: [
-        "Baño completo con secador de cabello.",
-        "Minibar y cafetera.",
-        "Sofá de descanso y escritorio amplio.",
-        "Caja de seguridad digital.",
-      ],
-      servicios: [
-        "Acceso a alberca y gimnasio.",
-        "Servicio a la habitación 24 horas.",
-        "Recepción y concierge.",
-      ],
+      descripcion: "Habitación espaciosa con balcón, ideal para 3 personas.",
       precio: "$180.000 por noche",
+      capacidad: 3,
     },
     suite: {
       nombre: "Suite Premium",
       img: habitacionSuite,
-      cama: "Cama King Size + Living",
-      caracteristicas: [
-        "Suite de 55 m² con vista panorámica a la ciudad.",
-        "Climatización inteligente con control digital.",
-        "Televisor 65\" UHD y sistema de sonido envolvente.",
-        "Wi-Fi ultra rápido + escritorio ejecutivo.",
-      ],
-      detalles: [
-        "Baño con jacuzzi y amenities premium.",
-        "Living con sofá, mesa de centro y minibar completo.",
-        "Balcón privado amueblado.",
-        "Caja fuerte, cafetera Nespresso y batas de baño.",
-      ],
-      servicios: [
-        "Acceso a spa, gimnasio y piscina climatizada.",
-        "Desayuno incluido en el restaurante gourmet.",
-        "Room service 24 hs y valet parking.",
-      ],
+      descripcion: "Suite de lujo con vista panorámica y espacio para 4 personas.",
       precio: "$250.000 por noche",
+      capacidad: 4,
     },
   };
+
+  const [habitaciones, setHabitaciones] = useState(habitacionesPredeterminadas);
+
+  // ---------- Traer habitaciones de la API ----------
+  useEffect(() => {
+    const fetchHabitaciones = async () => {
+      try {
+        const res = await fetch("http://127.0.0.1:5000/api/habitaciones");
+        const data = await res.json();
+
+        // Suponiendo que la API devuelve un array de habitaciones con id, nombre, descripcion, precio, capacidad y optional img
+        const nuevasHabitaciones = {};
+        data.forEach((h) => {
+          // Para evitar conflictos de key, usamos id de la API
+          nuevasHabitaciones[`api_${h.id}`] = {
+            nombre: h.nombre,
+            img: h.img || habitacionEstandar, // si no tiene imagen, usamos estándar
+            descripcion: h.descripcion,
+            precio: h.precio,
+            capacidad: h.capacidad,
+          };
+        });
+
+        // Combinamos las predeterminadas con las de API
+        setHabitaciones({ ...habitacionesPredeterminadas, ...nuevasHabitaciones });
+      } catch (error) {
+        console.error("Error al obtener habitaciones de la API:", error);
+      }
+    };
+
+    fetchHabitaciones();
+  }, []);
 
   const habitacion = habitaciones[tipo];
 
   const tileClassName = ({ date }) => {
     const fechaISO = date.toISOString().split("T")[0];
-    if (diasOcupados.includes(fechaISO)) {
-      return "bg-red-500 text-white rounded-full";
-    }
-    return "bg-green-600 text-white rounded-full";
+    return diasOcupados.includes(fechaISO)
+      ? "bg-red-500 text-white rounded-full"
+      : "bg-green-600 text-white rounded-full";
   };
 
-  // ---------- Helpers de tarjeta ----------
+  // ---------- Handlers y validaciones de pago (igual que tu código original) ----------
   const detectCardType = (numbersOnly) => {
     if (!numbersOnly) return null;
     if (/^4/.test(numbersOnly)) return "Visa";
@@ -136,9 +120,7 @@ export default function Habitaciones() {
       const part2 = numbersOnly.slice(4, 10);
       const part3 = numbersOnly.slice(10, 15);
       return [part1, part2, part3].filter(Boolean).join(" ");
-    } else {
-      return numbersOnly.match(/.{1,4}/g)?.join(" ") ?? numbersOnly;
-    }
+    } else return numbersOnly.match(/.{1,4}/g)?.join(" ") ?? numbersOnly;
   };
 
   const luhnCheck = (numStr) => {
@@ -157,24 +139,15 @@ export default function Habitaciones() {
     return sum % 10 === 0;
   };
 
-  const requiredCardLength = (type) => {
-    if (type === "Amex") return 15;
-    if (type === "Visa" || type === "Mastercard" || type === "Discover") return 16;
-    return 16;
-  };
-
+  const requiredCardLength = (type) => (type === "Amex" ? 15 : 16);
   const requiredCvvLength = (type) => (type === "Amex" ? 4 : 3);
 
-  // ---------- Handlers de inputs de pago ----------
   const handleCardInput = (e) => {
     let raw = e.target.value.replace(/\D/g, "");
     const type = detectCardType(raw);
-    const maxLen = requiredCardLength(type);
-    if (raw.length > maxLen) raw = raw.slice(0, maxLen);
-
+    if (raw.length > requiredCardLength(type)) raw = raw.slice(0, requiredCardLength(type));
     const formatted = formatCardNumber(raw, type);
-    const cardValid = raw.length === maxLen && luhnCheck(raw);
-
+    const cardValid = raw.length === requiredCardLength(type) && luhnCheck(raw);
     setPago((p) => ({
       ...p,
       tarjetaRaw: raw,
@@ -186,14 +159,8 @@ export default function Habitaciones() {
   };
 
   const handleExpiryInput = (e) => {
-    let raw = e.target.value.replace(/\D/g, "");
-    if (raw.length > 4) raw = raw.slice(0, 4);
-    let formatted = raw;
-    if (raw.length >= 3) {
-      formatted = raw.slice(0, 2) + "/" + raw.slice(2);
-    } else if (raw.length === 2) {
-      formatted = raw + "/";
-    }
+    let raw = e.target.value.replace(/\D/g, "").slice(0, 4);
+    let formatted = raw.length >= 3 ? raw.slice(0, 2) + "/" + raw.slice(2) : raw.length === 2 ? raw + "/" : raw;
     let expiryValid = false;
     if (formatted.length === 5) {
       const mm = parseInt(formatted.slice(0, 2), 10);
@@ -202,8 +169,7 @@ export default function Habitaciones() {
       if (expiryValid) {
         const now = new Date();
         const fullYear = 2000 + yy;
-        const expDate = new Date(fullYear, mm, 0, 23, 59, 59);
-        expiryValid = expDate >= new Date(now.getFullYear(), now.getMonth(), 1);
+        expiryValid = new Date(fullYear, mm, 0, 23, 59, 59) >= new Date(now.getFullYear(), now.getMonth(), 1);
       }
     }
     setPago((p) => ({ ...p, vencimiento: formatted, expiryValid }));
@@ -211,35 +177,19 @@ export default function Habitaciones() {
 
   const handleCvvInput = (e) => {
     const digits = e.target.value.replace(/\D/g, "");
-    const max = requiredCvvLength(pago.cardType);
-    const value = digits.slice(0, max);
-    const cvvValid = value.length === max;
-    setPago((p) => ({ ...p, cvv: value, cvvValid }));
+    const value = digits.slice(0, requiredCvvLength(pago.cardType));
+    setPago((p) => ({ ...p, cvv: value, cvvValid: value.length === requiredCvvLength(pago.cardType) }));
   };
 
   const isPaymentReady = () => pago.cardValid && pago.expiryValid && pago.cvvValid;
 
   const handleConfirmarPago = () => {
-    if (!isPaymentReady()) {
-      alert("Por favor completa correctamente los datos de la tarjeta.");
-      return;
-    }
+    if (!isPaymentReady()) return alert("Completa correctamente los datos de la tarjeta.");
     alert("¡Reserva y pago confirmados!");
     setPaso(0);
-    setPago({
-      tarjetaRaw: "",
-      tarjetaFormateada: "",
-      vencimiento: "",
-      cvv: "",
-      cardType: null,
-      cardValid: false,
-      expiryValid: false,
-      cvvValid: false,
-    });
+    setPago({ tarjetaRaw: "", tarjetaFormateada: "", vencimiento: "", cvv: "", cardType: null, cardValid: false, expiryValid: false, cvvValid: false });
     setUsuario({ nombre: "", apellido: "", dni: "", telefono: "", email: "" });
   };
-
-  const pasosTexto = ["Revisar Reserva", "Datos Personales", "Método de Pago"];
 
   // ---------- Validaciones datos personales ----------
   const isNombreValido = /^[a-zA-Z]{2,50}$/.test(usuario.nombre);
@@ -247,111 +197,54 @@ export default function Habitaciones() {
   const isDniValido = /^\d{8}$/.test(usuario.dni);
   const isTelefonoValido = /^\d{8,15}$/.test(usuario.telefono);
   const isEmailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(usuario.email);
-  const datosPersonalesValidos =
-    isNombreValido &&
-    isApellidoValido &&
-    isDniValido &&
-    isTelefonoValido &&
-    isEmailValido;
+  const datosPersonalesValidos = isNombreValido && isApellidoValido && isDniValido && isTelefonoValido && isEmailValido;
 
   return (
     <section className="min-h-screen bg-zinc-950 text-white py-0 px-0">
       <div className="w-full h-64 md:h-80 lg:h-96 overflow-hidden">
-        <img
-          src={portadaHabitaciones}
-          alt="Portada habitaciones"
-          className="w-full h-full object-cover object-center"
-        />
+        <img src={portadaHabitaciones} alt="Portada habitaciones" className="w-full h-full object-cover object-center" />
       </div>
 
       {paso === 0 && (
         <div className="container mx-auto max-w-5xl px-6 py-20">
-          <h2 className="text-5xl font-bold text-center mb-10 text-white-400">
-            Habitaciones
-          </h2>
+          <h2 className="text-5xl font-bold text-center mb-10 text-white-400">Habitaciones</h2>
 
           <div className="flex flex-col items-center mb-12">
-            <label htmlFor="tipo" className="text-gray-300 mb-3 text-lg">
-              Elegí una habitación:
-            </label>
+            <label htmlFor="tipo" className="text-gray-300 mb-3 text-lg">Elegí una habitación:</label>
             <select
               id="tipo"
               value={tipo}
               onChange={(e) => setTipo(e.target.value)}
               className="bg-zinc-800 text-white px-5 py-2 rounded-lg border border-zinc-700 focus:outline-none focus:ring-2 focus:ring-white-400 transition"
             >
-              <option value="estandar">Habitación Estándar</option>
-              <option value="deluxe">Habitación Deluxe</option>
-              <option value="suite">Habitación Suite</option> {/* 🔹 nueva opción */}
+              {Object.entries(habitaciones).map(([key, h]) => (
+                <option key={key} value={key}>{h.nombre}</option>
+              ))}
             </select>
           </div>
 
+          {habitacion && (
+            <div className="bg-zinc-900 rounded-2xl shadow-lg overflow-hidden flex flex-col md:flex-row">
+              <div className="relative md:w-1/2">
+                <img src={habitacion.img} alt={habitacion.nombre} className="w-full h-80 md:h-full object-cover" />
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 text-center">
+                  <p className="text-2xl md:text-3xl text-white-400 font-semibold">{habitacion.precio}</p>
+                </div>
+              </div>
 
-          <div className="bg-zinc-900 rounded-2xl shadow-lg overflow-hidden flex flex-col md:flex-row">
-            <div className="relative md:w-1/2">
-              <img
-                src={habitacion.img}
-                alt={habitacion.nombre}
-                className="w-full h-80 md:h-full object-cover"
-              />
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 text-center">
-                <p className="text-2xl md:text-3xl text-white-400 font-semibold">
-                  {habitacion.precio}
-                </p>
+              <div className="md:w-1/2 p-8 space-y-6">
+                <h3 className="text-3xl font-semibold text-white-400">{habitacion.nombre}</h3>
+                <p className="text-gray-300"><strong className="text-white">Capacidad:</strong> {habitacion.capacidad} personas</p>
+                <p className="text-gray-300">{habitacion.descripcion}</p>
+
+                <div className="mt-6">
+                  <button onClick={() => setMostrarCalendario(true)} className="bg-white hover:bg-gray-400 text-black px-6 py-2 rounded-lg transition font-semibold">
+                    Consultar disponibilidad
+                  </button>
+                </div>
               </div>
             </div>
-
-            <div className="md:w-1/2 p-8 space-y-6">
-              <h3 className="text-3xl font-semibold text-white-400">
-                {habitacion.nombre}
-              </h3>
-              <p className="text-gray-300">
-                <strong className="text-white">Tipo de cama:</strong> {habitacion.cama}
-              </p>
-
-              <div>
-                <h4 className="text-xl font-semibold mb-2 text-white">
-                  Características
-                </h4>
-                <ul className="list-disc list-inside text-gray-400 space-y-1">
-                  {habitacion.caracteristicas.map((item, i) => (
-                    <li key={i}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-
-              <div>
-                <h4 className="text-xl font-semibold mb-2 text-white">
-                  Detalles de la habitación
-                </h4>
-                <ul className="list-disc list-inside text-gray-400 space-y-1">
-                  {habitacion.detalles.map((item, i) => (
-                    <li key={i}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-
-              <div>
-                <h4 className="text-xl font-semibold mb-2 text-white">
-                  Servicios generales
-                </h4>
-                <ul className="list-disc list-inside text-gray-400 space-y-1">
-                  {habitacion.servicios.map((item, i) => (
-                    <li key={i}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="mt-6">
-                <button
-                  onClick={() => setMostrarCalendario(true)}
-                  className="bg-white hover:bg-gray-400 text-black px-6 py-2 rounded-lg transition font-semibold"
-                >
-                  Consultar disponibilidad
-                </button>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       )}
 

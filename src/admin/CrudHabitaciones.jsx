@@ -1,189 +1,245 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Plus, Trash2 } from "lucide-react";
 
-export default function HabitacionesCrud() {
-  const [habitaciones, setHabitaciones] = useState([
-    { id: 1, nombre: "Habitación 1", tipo: "Estándar", descripcion: "Cómoda habitación estándar con cama doble." },
-    { id: 2, nombre: "Habitación 2", tipo: "Deluxe", descripcion: "Habitación Deluxe con vista al jardín." },
-    { id: 3, nombre: "Habitación 3", tipo: "Suite", descripcion: "Suite amplia con sala de estar y jacuzzi." },
-    { id: 4, nombre: "Habitación 4", tipo: "Estándar", descripcion: "Habitación funcional para estadías cortas." },
-    { id: 5, nombre: "Habitación 5", tipo: "Deluxe", descripcion: "Habitación Deluxe con balcón privado." },
-    { id: 6, nombre: "Habitación 6", tipo: "Suite", descripcion: "Suite ejecutiva con escritorio y minibar." },
-    { id: 7, nombre: "Habitación 7", tipo: "Estándar", descripcion: "Habitación cómoda con cama queen." },
-    { id: 8, nombre: "Habitación 8", tipo: "Deluxe", descripcion: "Habitación con detalles de lujo y vista panorámica." },
-    { id: 9, nombre: "Habitación 9", tipo: "Suite", descripcion: "Suite con diseño moderno y amenities premium." },
-    { id: 10, nombre: "Habitación 10", tipo: "Estándar", descripcion: "Habitación simple con baño privado." },
-  ]);
-
-  const [nuevaHabitacion, setNuevaHabitacion] = useState({
+export default function CrudHabitaciones() {
+  const [habitaciones, setHabitaciones] = useState([]);
+  const [nueva, setNueva] = useState({
     nombre: "",
     tipo: "",
     descripcion: "",
+    precio: "",
+    capacidad: "",
+    estado: "DISPONIBLE",
+    imagen_url: "",
+    caracteristicas: "",
+    detalles: "",
+    servicios: "",
+    preview: null,
   });
 
-  const [editandoId, setEditandoId] = useState(null);
-  const [editData, setEditData] = useState({ nombre: "", tipo: "", descripcion: "" });
+  // Traer habitaciones desde la API al cargar la página
+  useEffect(() => {
+    fetch("http://127.0.0.1:5000/api/habitaciones")
+      .then((res) => res.json())
+      .then((data) => setHabitaciones(data))
+      .catch((err) => console.error("Error al cargar habitaciones:", err));
+  }, []);
 
-  const handleAgregar = () => {
-    if (!nuevaHabitacion.nombre || !nuevaHabitacion.tipo || !nuevaHabitacion.descripcion) {
-      alert("Por favor, completa todos los campos.");
+  // Función para agregar habitación
+  const agregarHabitacion = async () => {
+    if (!nueva.precio || !nueva.capacidad) {
+      alert("El precio y la capacidad son obligatorios.");
       return;
     }
 
-    const nueva = {
-      id: habitaciones.length + 1,
-      ...nuevaHabitacion,
+    // Prepara los datos según la API
+    const habitacionAPI = {
+      nombre: nueva.nombre,
+      tipo: nueva.tipo || "ESTANDAR",
+      descripcion: nueva.descripcion,
+      precio: nueva.precio,
+      capacidad: nueva.capacidad,
+      estado: nueva.estado,
+      imagen_url: nueva.imagen_url || nueva.preview || "",
     };
 
-    setHabitaciones([...habitaciones, nueva]);
-    setNuevaHabitacion({ nombre: "", tipo: "", descripcion: "" });
+    try {
+      const response = await fetch("http://127.0.0.1:5000/api/habitaciones", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(habitacionAPI),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        // Si se creó correctamente, agregar a la lista local
+        setHabitaciones([...habitaciones, { ...habitacionAPI, id: result.id || Date.now() }]);
+        // Resetear formulario
+        setNueva({
+          nombre: "",
+          tipo: "",
+          descripcion: "",
+          precio: "",
+          capacidad: "",
+          estado: "DISPONIBLE",
+          imagen_url: "",
+          caracteristicas: "",
+          detalles: "",
+          servicios: "",
+          preview: null,
+        });
+      } else {
+        alert("Error: " + result.error);
+      }
+    } catch (error) {
+      console.error("Error al agregar habitación:", error);
+      alert("Error al conectar con la API");
+    }
   };
 
-  const handleEliminar = (id) => {
-    setHabitaciones(habitaciones.filter((h) => h.id !== id));
-  };
+  const eliminarHabitacion = async (id) => {
+    try {
+      const response = await fetch(`http://127.0.0.1:5000/api/habitaciones/${id}`, {
+        method: "DELETE",
+      });
 
-  const handleEditar = (habitacion) => {
-    setEditandoId(habitacion.id);
-    setEditData({ nombre: habitacion.nombre, tipo: habitacion.tipo, descripcion: habitacion.descripcion });
-  };
-
-  const handleGuardarEdicion = () => {
-    setHabitaciones(
-      habitaciones.map((h) =>
-        h.id === editandoId ? { ...h, ...editData } : h
-      )
-    );
-    setEditandoId(null);
-    setEditData({ nombre: "", tipo: "", descripcion: "" });
+      if (response.ok) {
+        setHabitaciones(habitaciones.filter((h) => h.id !== id));
+      } else {
+        alert("Error al eliminar la habitación");
+      }
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6 text-center text-white">CRUD de Habitaciones</h1>
+    <div className="flex flex-col md:flex-row gap-6">
+      {/* Previsualización y Formulario */}
+      <div className="md:w-1/2 bg-zinc-900 p-4 rounded-lg shadow text-white flex flex-col gap-4">
+        <h2 className="text-2xl font-semibold mb-4">Agregar nueva habitación</h2>
 
-      {/* Formulario de nueva habitación */}
-      <div className="bg-zinc-900 shadow-md rounded-2xl p-5 mb-6">
-        <h2 className="text-xl font-semibold mb-4 text-white">Agregar nueva habitación</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <input
-            type="text"
-            placeholder="Nombre de habitación"
-            className="border rounded-lg p-2"
-            value={nuevaHabitacion.nombre}
-            onChange={(e) => setNuevaHabitacion({ ...nuevaHabitacion, nombre: e.target.value })}
-          />
-          <select
-            className="border rounded-lg p-2 bg-zinc-900 text-white "
-            value={nuevaHabitacion.tipo}
-            onChange={(e) => setNuevaHabitacion({ ...nuevaHabitacion, tipo: e.target.value })}
-          >
-            <option value="">Seleccionar tipo</option>
-            <option value="Estándar">Estándar</option>
-            <option value="Deluxe">Deluxe</option>
-            <option value="Suite">Suite</option>
-          </select>
-          <input
-            type="text"
-            placeholder="Descripción"
-            className="border rounded-lg p-2"
-            value={nuevaHabitacion.descripcion}
-            onChange={(e) => setNuevaHabitacion({ ...nuevaHabitacion, descripcion: e.target.value })}
-          />
-        </div>
+        <input
+          type="text"
+          placeholder="Nombre"
+          value={nueva.nombre}
+          onChange={(e) => setNueva({ ...nueva, nombre: e.target.value })}
+          className="bg-zinc-800 px-3 py-2 rounded w-full border border-zinc-700"
+        />
+
+        <input
+          type="text"
+          placeholder="Tipo"
+          value={nueva.tipo}
+          onChange={(e) => setNueva({ ...nueva, tipo: e.target.value })}
+          className="bg-zinc-800 px-3 py-2 rounded w-full border border-zinc-700"
+        />
+
+        <textarea
+          placeholder="Descripción"
+          value={nueva.descripcion}
+          onChange={(e) => setNueva({ ...nueva, descripcion: e.target.value })}
+          className="bg-zinc-800 px-3 py-2 rounded w-full border border-zinc-700"
+        />
+
+        <textarea
+          placeholder="Características (una por línea)"
+          value={nueva.caracteristicas}
+          onChange={(e) => setNueva({ ...nueva, caracteristicas: e.target.value })}
+          className="bg-zinc-800 px-3 py-2 rounded w-full border border-zinc-700"
+        />
+
+        <textarea
+          placeholder="Detalles (una por línea)"
+          value={nueva.detalles}
+          onChange={(e) => setNueva({ ...nueva, detalles: e.target.value })}
+          className="bg-zinc-800 px-3 py-2 rounded w-full border border-zinc-700"
+        />
+
+        <textarea
+          placeholder="Servicios generales (una por línea)"
+          value={nueva.servicios}
+          onChange={(e) => setNueva({ ...nueva, servicios: e.target.value })}
+          className="bg-zinc-800 px-3 py-2 rounded w-full border border-zinc-700"
+        />
+
+        <input
+          type="number"
+          placeholder="Precio"
+          value={nueva.precio}
+          onChange={(e) => setNueva({ ...nueva, precio: e.target.value })}
+          className="bg-zinc-800 px-3 py-2 rounded w-full border border-zinc-700"
+        />
+
+        <input
+          type="number"
+          placeholder="Capacidad"
+          value={nueva.capacidad}
+          onChange={(e) => setNueva({ ...nueva, capacidad: e.target.value })}
+          className="bg-zinc-800 px-3 py-2 rounded w-full border border-zinc-700"
+        />
+
+        <input
+          type="text"
+          placeholder="URL Imagen"
+          value={nueva.imagen_url}
+          onChange={(e) => setNueva({ ...nueva, imagen_url: e.target.value })}
+          className="bg-zinc-800 px-3 py-2 rounded w-full border border-zinc-700"
+        />
+
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            setNueva({ ...nueva, preview: URL.createObjectURL(file) });
+          }}
+          className="bg-zinc-800 px-3 py-2 rounded w-full border border-zinc-700"
+        />
+
         <button
-          onClick={handleAgregar}
-          className="mt-4 bg-green-500 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
+          onClick={agregarHabitacion}
+          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-white"
         >
-          Agregar Habitación
+          <Plus size={16} /> Agregar
         </button>
+
+        {/* Preview */}
+        <div className="mt-4 bg-zinc-800 rounded-xl overflow-hidden shadow p-4">
+          {nueva.preview && (
+            <img src={nueva.preview} alt="preview" className="w-full h-64 object-cover rounded" />
+          )}
+          <h3 className="text-xl font-semibold mt-2">{nueva.nombre || "Nombre de la habitación"}</h3>
+          <p><strong>Tipo:</strong> {nueva.tipo || "ESTANDAR"}</p>
+          <p><strong>Precio:</strong> {nueva.precio ? `$${nueva.precio}` : "$0"}</p>
+          <p><strong>Capacidad:</strong> {nueva.capacidad || "0"}</p>
+          <div>
+            <h4 className="font-semibold">Características:</h4>
+            <ul className="list-disc list-inside">
+              {nueva.caracteristicas
+                ? nueva.caracteristicas.split("\n").map((c, i) => <li key={i}>{c}</li>)
+                : <li>Ej: Aire acondicionado, Wi-Fi, Televisión</li>}
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-semibold">Detalles:</h4>
+            <ul className="list-disc list-inside">
+              {nueva.detalles
+                ? nueva.detalles.split("\n").map((d, i) => <li key={i}>{d}</li>)
+                : <li>Ej: Baño privado, Escritorio</li>}
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-semibold">Servicios:</h4>
+            <ul className="list-disc list-inside">
+              {nueva.servicios
+                ? nueva.servicios.split("\n").map((s, i) => <li key={i}>{s}</li>)
+                : <li>Ej: Gimnasio, Room service</li>}
+            </ul>
+          </div>
+        </div>
       </div>
 
-      {/* Tabla de habitaciones */}
-      <div className="overflow-x-auto bg-zinc-900 shadow-md ">
-        <table className="min-w-full border-collapse">
-          <thead className="bg-white text-black">
-            <tr>
-              <th className="border p-3 text-left">ID</th>
-              <th className="border p-3 text-left">Nombre</th>
-              <th className="border p-3 text-left">Tipo</th>
-              <th className="border p-3 text-left">Descripción</th>
-              <th className="border p-3 text-center">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {habitaciones.map((h) => (
-              <tr key={h.id} className="hover:bg-zinc-800/60 text-white">
-                <td className="border p-3">{h.id}</td>
-
-                <td className="border p-3">
-                  {editandoId === h.id ? (
-                    <input
-                      type="text"
-                      className="border rounded p-1 w-full text-white"
-                      value={editData.nombre}
-                      onChange={(e) => setEditData({ ...editData, nombre: e.target.value })}
-                    />
-                  ) : (
-                    h.nombre
-                  )}
-                </td>
-
-                <td className="border p-3">
-                  {editandoId === h.id ? (
-                    <select
-                      className="border rounded p-1 w-full bg-zinc-900 text-white "
-                      value={editData.tipo}
-                      onChange={(e) => setEditData({ ...editData, tipo: e.target.value })}
-                    >
-                      <option value="Estándar">Estándar</option>
-                      <option value="Deluxe">Deluxe</option>
-                      <option value="Suite">Suite</option>
-                    </select>
-                  ) : (
-                    h.tipo
-                  )}
-                </td>
-
-                <td className="border p-3">
-                  {editandoId === h.id ? (
-                    <input
-                      type="text"
-                      className="border rounded p-1 w-full text-white"
-                      value={editData.descripcion}
-                      onChange={(e) => setEditData({ ...editData, descripcion: e.target.value })}
-                    />
-                  ) : (
-                    h.descripcion
-                  )}
-                </td>
-
-                <td className="border p-3 text-center">
-                  {editandoId === h.id ? (
-                    <button
-                      onClick={handleGuardarEdicion}
-                      className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded mr-2"
-                    >
-                      Guardar
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => handleEditar(h)}
-                      className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded mr-2"
-                    >
-                      Editar
-                    </button>
-                  )}
-                  <button
-                    onClick={() => handleEliminar(h.id)}
-                    className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
-                  >
-                    Eliminar
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* Listado de habitaciones */}
+      <div className="md:w-1/2 bg-zinc-900 p-4 rounded-lg shadow text-white">
+        <h2 className="text-2xl font-semibold mb-4">Habitaciones existentes</h2>
+        <ul>
+          {habitaciones.map((h) => (
+            <li key={h.id} className="flex justify-between items-center bg-zinc-800 p-2 rounded mb-2">
+              <div>
+                <p className="font-semibold">{h.nombre}</p>
+                <p>Tipo: {h.tipo}</p>
+                <p>Precio: ${h.precio}</p>
+                <p>Capacidad: {h.capacidad}</p>
+              </div>
+              <button onClick={() => eliminarHabitacion(h.id)} className="text-red-500 hover:text-red-600">
+                <Trash2 size={16} />
+              </button>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );

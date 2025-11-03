@@ -6,6 +6,7 @@ export default function Login() {
   const location = useLocation();
   const [form, setForm] = useState({ nombre: "", email: "", contraseña: "" });
   const [mensaje, setMensaje] = useState("");
+  const [enviando, setEnviando] = useState(false); // 🔹 Evita doble clics
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -13,8 +14,9 @@ export default function Login() {
 
   const validarEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (enviando) return;
 
     if (!form.nombre || !form.email || !form.contraseña) {
       setMensaje("Todos los campos son obligatorios");
@@ -31,7 +33,7 @@ export default function Login() {
       return;
     }
 
-    // 🔹 Caso Operador (nombre especial)
+    // 🔹 Casos especiales: Operador
     if (
       form.nombre === "Horacio" &&
       form.email === "prueba@gmail.com" &&
@@ -42,43 +44,95 @@ export default function Login() {
         JSON.stringify({
           nombre: form.nombre,
           email: form.email,
-          tipo: "Operador",
+          tipo: "OPERADOR",
         })
       );
       navigate("/operador");
       return;
     }
-    
-     // 🔹 Caso Administrador
-  if (
-    form.nombre === "Pablo" &&
-    form.email === "admin@gmail.com" &&
-    form.contraseña === "1234"
-  ) {
-    localStorage.setItem(
-      "usuario",
-      JSON.stringify({
-        nombre: form.nombre,
-        email: form.email,
-        tipo: "Administrador",
-      })
-    );
-    navigate("/admin"); // Aquí asumo que la ruta del admin es /admin
+
+    // 🔹 Casos especiales: Administrador
+    if (
+      form.nombre === "Pablo" &&
+      form.email === "admin@gmail.com" &&
+      form.contraseña === "1234"
+    ) {
+      localStorage.setItem(
+        "usuario",
+        JSON.stringify({
+          nombre: form.nombre,
+          email: form.email,
+          tipo: "ADMINISTRADOR",
+        })
+      );
+      navigate("/admin");
+      return;
+    }
+
+    // 🔹 Login de cliente desde la API
+    setEnviando(true);
+    setMensaje("");
+
+try {
+  const response = await fetch("http://127.0.0.1:5000/api/users");
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error("Error al conectar con el servidor");
+  }
+
+  // Buscar usuario por email (puede ser CLIENTE o ADMINISTRADOR)
+  const usuario = data.find((u) => u.correo === form.email);
+
+  if (!usuario) {
+    setMensaje("No existe una cuenta registrada con ese correo.");
+    setEnviando(false);
     return;
   }
 
-    // 🔹 Caso cliente común
-    localStorage.setItem(
-      "usuario",
-      JSON.stringify({
-        nombre: form.nombre,
-        email: form.email,
-        tipo: "Cliente",
-      })
-    );
+  // Verificar contraseña
+  if (usuario.contraseña !== form.contraseña) {
+    setMensaje("Contraseña incorrecta.");
+    setEnviando(false);
+    return;
+  }
 
-    navigate("/");
+  // Validar nombre coincidente (opcional)
+  if (usuario.nombre.toLowerCase() !== form.nombre.toLowerCase()) {
+    setMensaje("El nombre no coincide con el usuario registrado.");
+    setEnviando(false);
+    return;
+  }
+
+  // Guardar datos del usuario
+  localStorage.setItem(
+    "usuario",
+    JSON.stringify({
+      nombre: usuario.nombre,
+      email: usuario.correo,
+      tipo: usuario.rol,
+    })
+  );
+
+  // Mostrar mensaje verde y redirigir según el rol
+  setMensaje("Inicio de sesión exitoso, redirigiendo...");
+
+  setTimeout(() => {
+    if (usuario.rol === "ADMINISTRADOR") {
+      navigate("/admin");
+    } else if (usuario.rol === "OPERADOR") {
+      navigate("/operador");
+    } else {
+      navigate("/"); // CLIENTE u otro
+    }
     window.location.reload();
+  }, 1000);
+} catch (error) {
+  console.error("Error en el login:", error);
+  setMensaje("No se pudo conectar con el servidor.");
+  setEnviando(false);
+}
+
   };
 
   return (
@@ -88,7 +142,17 @@ export default function Login() {
       {location.state?.mensaje && (
         <p className="text-green-400 mb-4">{location.state.mensaje}</p>
       )}
-      {mensaje && <p className="text-red-400 mb-4">{mensaje}</p>}
+      {mensaje && (
+  <p
+    className={`mb-4 text-center ${
+      mensaje.toLowerCase().includes("exitoso")
+        ? "text-green-400"
+        : "text-red-400"
+    }`}
+  >
+    {mensaje}
+  </p>
+)}
 
       <form
         onSubmit={handleSubmit}
@@ -100,7 +164,8 @@ export default function Login() {
           name="nombre"
           value={form.nombre}
           onChange={handleChange}
-          className="w-full p-3 rounded bg-gray-800 text-white mb-4 focus:ring-2 focus:ring-gray-600 outline-none"
+          disabled={enviando}
+          className="w-full p-3 rounded bg-gray-800 text-white mb-4 focus:ring-2 focus:ring-gray-600 outline-none disabled:opacity-50"
         />
 
         <label className="block mb-3 text-gray-300">Email</label>
@@ -109,7 +174,8 @@ export default function Login() {
           name="email"
           value={form.email}
           onChange={handleChange}
-          className="w-full p-3 rounded bg-gray-800 text-white mb-4 focus:ring-2 focus:ring-gray-600 outline-none"
+          disabled={enviando}
+          className="w-full p-3 rounded bg-gray-800 text-white mb-4 focus:ring-2 focus:ring-gray-600 outline-none disabled:opacity-50"
         />
 
         <label className="block mb-3 text-gray-300">Contraseña</label>
@@ -118,14 +184,27 @@ export default function Login() {
           name="contraseña"
           value={form.contraseña}
           onChange={handleChange}
-          className="w-full p-3 rounded bg-gray-800 text-white mb-6 focus:ring-2 focus:ring-gray-600 outline-none"
+          disabled={enviando}
+          className="w-full p-3 rounded bg-gray-800 text-white mb-6 focus:ring-2 focus:ring-gray-600 outline-none disabled:opacity-50"
         />
 
         <button
           type="submit"
-          className="w-full bg-white text-black font-semibold py-3 rounded-lg hover:bg-gray-300 transition-all"
+          disabled={enviando}
+          className={`w-full font-semibold py-3 rounded-lg transition-all ${
+            enviando
+              ? "bg-gray-400 text-gray-800 cursor-not-allowed"
+              : "bg-white text-black hover:bg-gray-300"
+          }`}
         >
-          Iniciar Sesión
+          {enviando ? (
+            <div className="flex justify-center items-center space-x-2">
+              <div className="w-4 h-4 border-2 border-gray-800 border-t-transparent rounded-full animate-spin"></div>
+              <span>Ingresando...</span>
+            </div>
+          ) : (
+            "Iniciar Sesión"
+          )}
         </button>
 
         <p className="mt-6 text-center text-gray-400 text-sm">
