@@ -74,48 +74,43 @@ export default function Login() {
     setMensaje("");
 
 try {
-  const response = await fetch("http://127.0.0.1:5000/api/users");
-  const data = await response.json();
+  const userData = {
+    correo: form.email,
+    contraseña: form.contraseña,
+  };
+
+  const response = await fetch("http://127.0.0.1:5000/api/login", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(userData),
+  });
+
+  const usuario = await response.json();
+  console.log(usuario);
 
   if (!response.ok) {
-    throw new Error("Error al conectar con el servidor");
-  }
-
-  // Buscar usuario por email (puede ser CLIENTE o ADMINISTRADOR)
-  const usuario = data.find((u) => u.correo === form.email);
-
-  if (!usuario) {
-    setMensaje("No existe una cuenta registrada con ese correo.");
+    // Si la API devuelve un error (como 401), muestra el mensaje que venga del backend
+    setMensaje(usuario.error || "Error en el login");
     setEnviando(false);
     return;
   }
 
-  // Verificar contraseña
-  if (usuario.contraseña !== form.contraseña) {
-    setMensaje("Contraseña incorrecta.");
-    setEnviando(false);
-    return;
-  }
-
-  // Validar nombre coincidente (opcional)
-  if (usuario.nombre.toLowerCase() !== form.nombre.toLowerCase()) {
-    setMensaje("El nombre no coincide con el usuario registrado.");
-    setEnviando(false);
-    return;
-  }
-
-  // Guardar datos del usuario
+  // Si llegamos aquí, el login fue exitoso
   localStorage.setItem(
     "usuario",
     JSON.stringify({
       nombre: usuario.nombre,
       email: usuario.correo,
       tipo: usuario.rol,
+      id: usuario.id,
     })
   );
 
-  // Mostrar mensaje verde y redirigir según el rol
+  // Mensaje de éxito
   setMensaje("Inicio de sesión exitoso, redirigiendo...");
+
 
   setTimeout(() => {
     if (usuario.rol === "ADMINISTRADOR") {
@@ -127,6 +122,10 @@ try {
     }
     window.location.reload();
   }, 1000);
+  
+
+
+
 } catch (error) {
   console.error("Error en el login:", error);
   setMensaje("No se pudo conectar con el servidor.");
