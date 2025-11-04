@@ -13,7 +13,9 @@ export default function UsuariosAdmin() {
   const [mensaje, setMensaje] = useState("");
   const [bloqueoClick, setBloqueoClick] = useState(false);
 
-  const adminId = 2; // ⚠️ ID real del administrador logueado (ajústalo según tu DB)
+  const admin= JSON.parse(localStorage.getItem("usuario"));
+
+  const adminId = admin.id; // ⚠️ ID real del administrador logueado (ajústalo según tu DB)
 
   // 🔹 Obtener usuarios activos (operadores y administradores)
   const obtenerUsuarios = async () => {
