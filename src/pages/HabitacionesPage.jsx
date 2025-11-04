@@ -64,35 +64,45 @@ export default function Habitaciones() {
 
   const [habitaciones, setHabitaciones] = useState(habitacionesPredeterminadas);
 
-  // ---------- Traer habitaciones de la API ----------
-  useEffect(() => {
-    const fetchHabitaciones = async () => {
-      try {
-        const res = await fetch("http://127.0.0.1:5000/api/habitaciones");
-        const data = await res.json();
+// ---------- Traer habitaciones de la API ----------
+useEffect(() => {
+  const fetchHabitaciones = async () => {
+    try {
+      const res = await fetch("http://127.0.0.1:5000/api/habitaciones");
+      const data = await res.json();
 
-        // Suponiendo que la API devuelve un array de habitaciones con id, nombre, descripcion, precio, capacidad y optional img
-        const nuevasHabitaciones = {};
-        data.forEach((h) => {
-          // Para evitar conflictos de key, usamos id de la API
-          nuevasHabitaciones[`api_${h.id}`] = {
-            nombre: h.nombre,
-            img: h.img || habitacionEstandar, // si no tiene imagen, usamos estándar
-            descripcion: h.descripcion,
-            precio: h.precio,
-            capacidad: h.capacidad,
-          };
-        });
+      const nuevasHabitaciones = {};
 
-        // Combinamos las predeterminadas con las de API
-        setHabitaciones({ ...habitacionesPredeterminadas, ...nuevasHabitaciones });
-      } catch (error) {
-        console.error("Error al obtener habitaciones de la API:", error);
-      }
-    };
+      data.forEach((h) => {
+        // Asignar imagen según el tipo o nombre
+        let imagen = habitacionEstandar; // por defecto
+        const tipo = (h.tipo || h.nombre || "").toLowerCase();
 
-    fetchHabitaciones();
-  }, []);
+        if (tipo.includes("DELUXE")) imagen = habitacionDeluxe;
+        else if (tipo.includes("SUITE")) imagen = habitacionSuite;
+        else if (tipo.includes("ESTÁNDAR") || tipo.includes("ESTANDAR"))
+          imagen = habitacionEstandar;
+
+        nuevasHabitaciones[`api_${h.id}`] = {
+          nombre: h.nombre,
+          img: h.img || imagen, // usa la imagen de la API si existe, si no la local
+          descripcion: h.descripcion,
+          precio: h.precio,
+          capacidad: h.capacidad,
+        };
+      });
+
+      // Combinar predeterminadas con las de la API
+      setHabitaciones({ ...habitacionesPredeterminadas, ...nuevasHabitaciones });
+    } catch (error) {
+      console.error("Error al obtener habitaciones de la API:", error);
+    }
+  };
+
+  fetchHabitaciones();
+}, []);
+
+
 
   const habitacion = habitaciones[tipo];
 

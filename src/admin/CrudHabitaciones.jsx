@@ -1,6 +1,17 @@
 import { useState, useEffect } from "react";
 import { Plus, Trash2 } from "lucide-react";
 
+// Importar imágenes locales
+import estandar1 from "../assets/estandar/foto1.png";
+import estandar2 from "../assets/estandar/foto2.png";
+import estandar3 from "../assets/estandar/foto3.png";
+import deluxe1 from "../assets/deluxe/foto1.png";
+import deluxe2 from "../assets/deluxe/foto2.png";
+import deluxe3 from "../assets/deluxe/foto3.png";
+import suite1 from "../assets/suite/foto1.png";
+import suite2 from "../assets/suite/foto2.png";
+import suite3 from "../assets/suite/foto3.png";
+
 export default function CrudHabitaciones() {
   const [habitaciones, setHabitaciones] = useState([]);
   const [nueva, setNueva] = useState({
@@ -11,36 +22,100 @@ export default function CrudHabitaciones() {
     capacidad: "",
     estado: "DISPONIBLE",
     imagen_url: "",
-    caracteristicas: "",
-    detalles: "",
-    servicios: "",
-    preview: null,
   });
 
-  // Traer habitaciones desde la API al cargar la página
+  const imagenesLocales = {
+    ESTANDAR: [estandar1, estandar2, estandar3],
+    DELUXE: [deluxe1, deluxe2, deluxe3],
+    SUITE: [suite1, suite2, suite3],
+  };
+
+  // Función para elegir imagen local aleatoria según el tipo
+  const obtenerImagenLocal = (tipo) => {
+    const grupo = imagenesLocales[tipo?.toUpperCase()] || imagenesLocales.ESTANDAR;
+    const randomIndex = Math.floor(Math.random() * grupo.length);
+    return grupo[randomIndex];
+  };
+
+  // Verifica si una URL de imagen funciona (opcional)
+  const verificarImagen = async (url) => {
+    if (!url) return false;
+    try {
+      const res = await fetch(url, { method: "HEAD" });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  };
+
+  // 🔹 Traer habitaciones desde la API + agregar predeterminadas
   useEffect(() => {
-    fetch("http://127.0.0.1:5000/api/habitaciones")
-      .then((res) => res.json())
-      .then((data) => setHabitaciones(data))
-      .catch((err) => console.error("Error al cargar habitaciones:", err));
+    const fetchHabitaciones = async () => {
+      try {
+        const res = await fetch("http://127.0.0.1:5000/api/habitaciones");
+        const data = await res.json();
+
+        const predeterminadas = [
+          {
+            id: "local-1",
+            nombre: "Habitación Estándar",
+            tipo: "ESTANDAR",
+            descripcion: "Habitación cómoda con servicios esenciales.",
+            precio: 150000,
+            capacidad: 2,
+            estado: "DISPONIBLE",
+            imagen_url: obtenerImagenLocal("ESTANDAR"),
+          },
+          {
+            id: "local-2",
+            nombre: "Habitación Deluxe",
+            tipo: "DELUXE",
+            descripcion: "Espaciosa y elegante, ideal para una estadía superior.",
+            precio: 230000,
+            capacidad: 3,
+            estado: "DISPONIBLE",
+            imagen_url: obtenerImagenLocal("DELUXE"),
+          },
+          {
+            id: "local-3",
+            nombre: "Suite Ejecutiva",
+            tipo: "SUITE",
+            descripcion: "Suite de lujo con amplias comodidades y vista panorámica.",
+            precio: 350000,
+            capacidad: 4,
+            estado: "DISPONIBLE",
+            imagen_url: obtenerImagenLocal("SUITE"),
+          },
+        ];
+
+        setHabitaciones([...predeterminadas, ...data]);
+      } catch (error) {
+        console.error("Error al cargar habitaciones:", error);
+      }
+    };
+
+    fetchHabitaciones();
   }, []);
 
-  // Función para agregar habitación
+  // 🔹 Agregar habitación nueva
   const agregarHabitacion = async () => {
     if (!nueva.precio || !nueva.capacidad) {
       alert("El precio y la capacidad son obligatorios.");
       return;
     }
 
-    // Prepara los datos según la API
+    const tipo = nueva.tipo || "ESTANDAR";
+    const imagenValida = await verificarImagen(nueva.imagen_url);
+    const imagenFinal = imagenValida ? nueva.imagen_url : obtenerImagenLocal(tipo);
+
     const habitacionAPI = {
       nombre: nueva.nombre,
-      tipo: nueva.tipo || "ESTANDAR",
+      tipo,
       descripcion: nueva.descripcion,
       precio: nueva.precio,
       capacidad: nueva.capacidad,
       estado: nueva.estado,
-      imagen_url: nueva.imagen_url || nueva.preview || "",
+      imagen_url: imagenFinal,
     };
 
     try {
@@ -53,9 +128,7 @@ export default function CrudHabitaciones() {
       const result = await response.json();
 
       if (response.ok) {
-        // Si se creó correctamente, agregar a la lista local
         setHabitaciones([...habitaciones, { ...habitacionAPI, id: result.id || Date.now() }]);
-        // Resetear formulario
         setNueva({
           nombre: "",
           tipo: "",
@@ -64,10 +137,6 @@ export default function CrudHabitaciones() {
           capacidad: "",
           estado: "DISPONIBLE",
           imagen_url: "",
-          caracteristicas: "",
-          detalles: "",
-          servicios: "",
-          preview: null,
         });
       } else {
         alert("Error: " + result.error);
@@ -83,7 +152,6 @@ export default function CrudHabitaciones() {
       const response = await fetch(`http://127.0.0.1:5000/api/habitaciones/${id}`, {
         method: "DELETE",
       });
-
       if (response.ok) {
         setHabitaciones(habitaciones.filter((h) => h.id !== id));
       } else {
@@ -96,7 +164,7 @@ export default function CrudHabitaciones() {
 
   return (
     <div className="flex flex-col md:flex-row gap-6">
-      {/* Previsualización y Formulario */}
+      {/* Formulario */}
       <div className="md:w-1/2 bg-zinc-900 p-4 rounded-lg shadow text-white flex flex-col gap-4">
         <h2 className="text-2xl font-semibold mb-4">Agregar nueva habitación</h2>
 
@@ -108,39 +176,21 @@ export default function CrudHabitaciones() {
           className="bg-zinc-800 px-3 py-2 rounded w-full border border-zinc-700"
         />
 
-        <input
-          type="text"
-          placeholder="Tipo"
+        <select
           value={nueva.tipo}
           onChange={(e) => setNueva({ ...nueva, tipo: e.target.value })}
           className="bg-zinc-800 px-3 py-2 rounded w-full border border-zinc-700"
-        />
+        >
+          <option value="">Seleccionar tipo</option>
+          <option value="ESTANDAR">Estándar</option>
+          <option value="DELUXE">Deluxe</option>
+          <option value="SUITE">Suite</option>
+        </select>
 
         <textarea
           placeholder="Descripción"
           value={nueva.descripcion}
           onChange={(e) => setNueva({ ...nueva, descripcion: e.target.value })}
-          className="bg-zinc-800 px-3 py-2 rounded w-full border border-zinc-700"
-        />
-
-        <textarea
-          placeholder="Características (una por línea)"
-          value={nueva.caracteristicas}
-          onChange={(e) => setNueva({ ...nueva, caracteristicas: e.target.value })}
-          className="bg-zinc-800 px-3 py-2 rounded w-full border border-zinc-700"
-        />
-
-        <textarea
-          placeholder="Detalles (una por línea)"
-          value={nueva.detalles}
-          onChange={(e) => setNueva({ ...nueva, detalles: e.target.value })}
-          className="bg-zinc-800 px-3 py-2 rounded w-full border border-zinc-700"
-        />
-
-        <textarea
-          placeholder="Servicios generales (una por línea)"
-          value={nueva.servicios}
-          onChange={(e) => setNueva({ ...nueva, servicios: e.target.value })}
           className="bg-zinc-800 px-3 py-2 rounded w-full border border-zinc-700"
         />
 
@@ -168,61 +218,15 @@ export default function CrudHabitaciones() {
           className="bg-zinc-800 px-3 py-2 rounded w-full border border-zinc-700"
         />
 
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            setNueva({ ...nueva, preview: URL.createObjectURL(file) });
-          }}
-          className="bg-zinc-800 px-3 py-2 rounded w-full border border-zinc-700"
-        />
-
         <button
           onClick={agregarHabitacion}
           className="flex items-center gap-2 bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-white"
         >
           <Plus size={16} /> Agregar
         </button>
-
-        {/* Preview */}
-        <div className="mt-4 bg-zinc-800 rounded-xl overflow-hidden shadow p-4">
-          {nueva.preview && (
-            <img src={nueva.preview} alt="preview" className="w-full h-64 object-cover rounded" />
-          )}
-          <h3 className="text-xl font-semibold mt-2">{nueva.nombre || "Nombre de la habitación"}</h3>
-          <p><strong>Tipo:</strong> {nueva.tipo || "ESTANDAR"}</p>
-          <p><strong>Precio:</strong> {nueva.precio ? `$${nueva.precio}` : "$0"}</p>
-          <p><strong>Capacidad:</strong> {nueva.capacidad || "0"}</p>
-          <div>
-            <h4 className="font-semibold">Características:</h4>
-            <ul className="list-disc list-inside">
-              {nueva.caracteristicas
-                ? nueva.caracteristicas.split("\n").map((c, i) => <li key={i}>{c}</li>)
-                : <li>Ej: Aire acondicionado, Wi-Fi, Televisión</li>}
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-semibold">Detalles:</h4>
-            <ul className="list-disc list-inside">
-              {nueva.detalles
-                ? nueva.detalles.split("\n").map((d, i) => <li key={i}>{d}</li>)
-                : <li>Ej: Baño privado, Escritorio</li>}
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-semibold">Servicios:</h4>
-            <ul className="list-disc list-inside">
-              {nueva.servicios
-                ? nueva.servicios.split("\n").map((s, i) => <li key={i}>{s}</li>)
-                : <li>Ej: Gimnasio, Room service</li>}
-            </ul>
-          </div>
-        </div>
       </div>
 
-      {/* Listado de habitaciones */}
+      {/* Listado */}
       <div className="md:w-1/2 bg-zinc-900 p-4 rounded-lg shadow text-white">
         <h2 className="text-2xl font-semibold mb-4">Habitaciones existentes</h2>
         <ul>
@@ -234,7 +238,10 @@ export default function CrudHabitaciones() {
                 <p>Precio: ${h.precio}</p>
                 <p>Capacidad: {h.capacidad}</p>
               </div>
-              <button onClick={() => eliminarHabitacion(h.id)} className="text-red-500 hover:text-red-600">
+              <button
+                onClick={() => eliminarHabitacion(h.id)}
+                className="text-red-500 hover:text-red-600"
+              >
                 <Trash2 size={16} />
               </button>
             </li>
