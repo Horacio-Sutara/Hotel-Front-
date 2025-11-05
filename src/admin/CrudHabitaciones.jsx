@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Edit3, Check, X } from "lucide-react";
 
-// Importar imágenes locales
+// 🔹 Imágenes locales
 import estandar1 from "../assets/estandar/foto1.png";
 import estandar2 from "../assets/estandar/foto2.png";
 import estandar3 from "../assets/estandar/foto3.png";
@@ -20,9 +20,12 @@ export default function CrudHabitaciones() {
     descripcion: "",
     precio: "",
     capacidad: "",
-    estado: "DISPONIBLE",
     imagen_url: "",
   });
+
+  const [editando, setEditando] = useState(null);
+  const [editData, setEditData] = useState({});
+  const ADMIN_ID = 1;
 
   const imagenesLocales = {
     ESTANDAR: [estandar1, estandar2, estandar3],
@@ -30,14 +33,11 @@ export default function CrudHabitaciones() {
     SUITE: [suite1, suite2, suite3],
   };
 
-  // Función para elegir imagen local aleatoria según el tipo
   const obtenerImagenLocal = (tipo) => {
     const grupo = imagenesLocales[tipo?.toUpperCase()] || imagenesLocales.ESTANDAR;
-    const randomIndex = Math.floor(Math.random() * grupo.length);
-    return grupo[randomIndex];
+    return grupo[Math.floor(Math.random() * grupo.length)];
   };
 
-  // Verifica si una URL de imagen funciona (opcional)
   const verificarImagen = async (url) => {
     if (!url) return false;
     try {
@@ -48,7 +48,7 @@ export default function CrudHabitaciones() {
     }
   };
 
-  // 🔹 Traer habitaciones desde la API + agregar predeterminadas
+  // 🔹 Cargar habitaciones de la API + predeterminadas
   useEffect(() => {
     const fetchHabitaciones = async () => {
       try {
@@ -97,7 +97,7 @@ export default function CrudHabitaciones() {
     fetchHabitaciones();
   }, []);
 
-  // 🔹 Agregar habitación nueva
+  // 🔹 Agregar nueva habitación
   const agregarHabitacion = async () => {
     if (!nueva.precio || !nueva.capacidad) {
       alert("El precio y la capacidad son obligatorios.");
@@ -114,7 +114,6 @@ export default function CrudHabitaciones() {
       descripcion: nueva.descripcion,
       precio: nueva.precio,
       capacidad: nueva.capacidad,
-      estado: nueva.estado,
       imagen_url: imagenFinal,
     };
 
@@ -128,14 +127,16 @@ export default function CrudHabitaciones() {
       const result = await response.json();
 
       if (response.ok) {
-        setHabitaciones([...habitaciones, { ...habitacionAPI, id: result.id || Date.now() }]);
+        setHabitaciones([
+          ...habitaciones,
+          { ...habitacionAPI, id: Date.now(), estado: "DISPONIBLE" },
+        ]);
         setNueva({
           nombre: "",
           tipo: "",
           descripcion: "",
           precio: "",
           capacidad: "",
-          estado: "DISPONIBLE",
           imagen_url: "",
         });
       } else {
@@ -147,20 +148,64 @@ export default function CrudHabitaciones() {
     }
   };
 
-  const eliminarHabitacion = async (id) => {
+  // 🔹 Guardar edición (evita error 415)
+  const guardarEdicion = async (id) => {
     try {
-      const response = await fetch(`http://127.0.0.1:5000/api/habitaciones/${id}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `http://127.0.0.1:5000/api/habitaciones/${id}?admin_id=${ADMIN_ID}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(editData || {}), //  aseguramos que haya cuerpo JSON
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setHabitaciones(
+          habitaciones.map((h) => (h.id === id ? { ...h, ...editData } : h))
+        );
+        setEditando(null);
+      } else {
+        alert(result.error || "Error al editar habitación");
+      }
+    } catch (error) {
+      console.error("Error al editar habitación:", error);
+      alert("Error al conectar con la API");
+    }
+  };
+
+  // 🔹 Eliminar habitación (evita error 415)
+  const eliminarHabitacion = async (id) => {
+    if (!window.confirm("¿Seguro que deseas eliminar esta habitación?")) return;
+
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:5000/api/habitaciones/${id}?admin_id=${ADMIN_ID}`,
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}), //  cuerpo vacío evita error 415
+        }
+      );
+
+      const result = await response.json();
+
       if (response.ok) {
         setHabitaciones(habitaciones.filter((h) => h.id !== id));
       } else {
-        alert("Error al eliminar la habitación");
+        alert(result.error || "Error al eliminar habitación");
       }
     } catch (error) {
-      console.error(error);
+      console.error("Error al eliminar habitación:", error);
+      alert("Error al conectar con la API");
     }
   };
+
+  // 🔹 Separar habitaciones cerradas
+  const cerradas = habitaciones.filter((h) => h.estado === "CERRADA");
+  const disponibles = habitaciones.filter((h) => h.estado !== "CERRADA");
 
   return (
     <div className="flex flex-col md:flex-row gap-6">
@@ -226,27 +271,116 @@ export default function CrudHabitaciones() {
         </button>
       </div>
 
-      {/* Listado */}
-      <div className="md:w-1/2 bg-zinc-900 p-4 rounded-lg shadow text-white">
-        <h2 className="text-2xl font-semibold mb-4">Habitaciones existentes</h2>
-        <ul>
-          {habitaciones.map((h) => (
-            <li key={h.id} className="flex justify-between items-center bg-zinc-800 p-2 rounded mb-2">
-              <div>
-                <p className="font-semibold">{h.nombre}</p>
-                <p>Tipo: {h.tipo}</p>
-                <p>Precio: ${h.precio}</p>
-                <p>Capacidad: {h.capacidad}</p>
-              </div>
-              <button
-                onClick={() => eliminarHabitacion(h.id)}
-                className="text-red-500 hover:text-red-600"
+      {/* Listado de habitaciones */}
+      <div className="md:w-1/2 flex flex-col gap-6">
+        {/* Disponibles / Ocupadas */}
+        <div className="bg-zinc-900 p-4 rounded-lg shadow text-white">
+          <h2 className="text-2xl font-semibold mb-4">Habitaciones activas</h2>
+          <ul>
+            {disponibles.map((h) => (
+              <li
+                key={h.id}
+                className="flex justify-between items-center bg-zinc-800 p-2 rounded mb-2"
               >
-                <Trash2 size={16} />
-              </button>
-            </li>
-          ))}
-        </ul>
+                {editando === h.id ? (
+                  <div className="flex flex-col gap-1 w-full">
+                    <input
+                      type="text"
+                      value={editData.nombre || ""}
+                      onChange={(e) => setEditData({ ...editData, nombre: e.target.value })}
+                      className="bg-zinc-700 px-2 py-1 rounded"
+                    />
+                    <input
+                      type="number"
+                      value={editData.precio || ""}
+                      onChange={(e) => setEditData({ ...editData, precio: e.target.value })}
+                      className="bg-zinc-700 px-2 py-1 rounded"
+                    />
+                    <select
+                      value={editData.estado || "DISPONIBLE"}
+                      onChange={(e) => setEditData({ ...editData, estado: e.target.value })}
+                      className="bg-zinc-700 px-2 py-1 rounded"
+                    >
+                      <option value="DISPONIBLE">Disponible</option>
+                      <option value="OCUPADA">Ocupada</option>
+                      <option value="CERRADA">Cerrada</option>
+                    </select>
+                    <div className="flex gap-2 mt-1">
+                      <button
+                        onClick={() => guardarEdicion(h.id)}
+                        className="bg-green-600 px-2 py-1 rounded"
+                      >
+                        <Check size={14} />
+                      </button>
+                      <button
+                        onClick={() => setEditando(null)}
+                        className="bg-red-600 px-2 py-1 rounded"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <p className="font-semibold">{h.nombre}</p>
+                      <p>Tipo: {h.tipo}</p>
+                      <p>Estado: {h.estado}</p>
+                      <p>Precio: ${h.precio}</p>
+                      <p>Capacidad: {h.capacidad}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          setEditando(h.id);
+                          setEditData(h);
+                        }}
+                        className="text-blue-400 hover:text-blue-500"
+                      >
+                        <Edit3 size={16} />
+                      </button>
+                      <button
+                        onClick={() => eliminarHabitacion(h.id)}
+                        className="text-red-500 hover:text-red-600"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Cerradas */}
+        <div className="bg-red-900 p-4 rounded-lg shadow text-white">
+          <h2 className="text-2xl font-semibold mb-4">Habitaciones cerradas</h2>
+          {cerradas.length === 0 ? (
+            <p className="text-zinc-300">No hay habitaciones cerradas.</p>
+          ) : (
+            <ul>
+              {cerradas.map((h) => (
+                <li
+                  key={h.id}
+                  className="flex justify-between items-center bg-zinc-800 p-2 rounded mb-2"
+                >
+                  <div>
+                    <p className="font-semibold">{h.nombre}</p>
+                    <p>Tipo: {h.tipo}</p>
+                    <p>Precio: ${h.precio}</p>
+                  </div>
+                  <button
+                    onClick={() => eliminarHabitacion(h.id)}
+                    className="text-red-400 hover:text-red-600"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </div>
   );

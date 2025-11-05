@@ -2,64 +2,90 @@ import { useState, useEffect } from "react";
 
 export default function Mails({ operadorId }) {
   const [consultas, setConsultas] = useState([]);
-  const [loadingIds, setLoadingIds] = useState([]); // Para evitar doble click
+  const [loadingIds, setLoadingIds] = useState([]);
 
+  // 🔹 Cargar consultas al iniciar
   useEffect(() => {
     fetch("http://127.0.0.1:5000/api/consultas")
-      .then(res => res.json())
-      .then(data => {
-        const mapped = data.map(c => ({
+      .then((res) => res.json())
+      .then((data) => {
+        const mapped = data.map((c) => ({
           id: c.id,
           cliente: c.nombre,
           mensaje: c.mensaje,
           respondida: c.estado === "RESPONDIDO",
-          respuesta: c.respuesta || ""
+          respuesta: c.respuesta || "",
         }));
         setConsultas(mapped);
       })
-      .catch(err => console.error(err));
+      .catch((err) => console.error("Error al cargar consultas:", err));
   }, []);
 
-  const responder = async (id, texto) => {
-    if (!texto.trim()) return alert("El mensaje no puede estar vacío.");
-    if (loadingIds.includes(id)) return;
-    setLoadingIds(prev => [...prev, id]);
+  // 🔹 Función para enviar respuesta
+  const responder = async (idConsulta, texto) => {
+    if (!texto.trim()) {
+      alert("El mensaje no puede estar vacío.");
+      return;
+    }
+    if (loadingIds.includes(idConsulta)) return;
+
+    setLoadingIds((prev) => [...prev, idConsulta]);
 
     try {
-      const res = await fetch("http://127.0.0.1:5000/api/respuestas_consultas", {
+      const response = await fetch("http://127.0.0.1:5000/api/respuestas_consultas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id_consulta: id,
           id_operador: operadorId,
-          mensaje: texto
-        })
+          id_consulta: idConsulta,
+          mensaje: texto,
+        }),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data[1] || "Error al responder consulta");
+      const data = await response.json();
 
-      setConsultas(prev =>
-        prev.map(c =>
-          c.id === id ? { ...c, respondida: true, respuesta: texto } : c
+      // ✅ Verificar respuesta del backend
+      if (!response.ok) {
+        if (response.status === 403) {
+          throw new Error("No tienes permiso para responder esta consulta (403).");
+        } else if (response.status === 404) {
+          throw new Error("Consulta no encontrada (404).");
+        } else {
+          throw new Error(data.error || "Error al responder la consulta.");
+        }
+      }
+
+      // ✅ Si el servidor confirmó la creación
+      console.log("Respuesta enviada correctamente:", data.mensaje);
+      alert("Respuesta enviada correctamente ✅");
+
+      // Actualiza estado local
+      setConsultas((prev) =>
+        prev.map((c) =>
+          c.id === idConsulta
+            ? { ...c, respondida: true, respuesta: texto }
+            : c
         )
       );
     } catch (error) {
+      console.error("Error al enviar respuesta:", error);
       alert(error.message);
     } finally {
-      setLoadingIds(prev => prev.filter(i => i !== id));
+      setLoadingIds((prev) => prev.filter((i) => i !== idConsulta));
     }
   };
 
+  // 🔹 Borrar consultas respondidas (opcional)
   const borrarRespondidas = () => {
-    setConsultas(prev => prev.filter(c => !c.respondida));
+    setConsultas((prev) => prev.filter((c) => !c.respondida));
   };
 
   return (
     <div className="p-6">
       <h2 className="text-2xl text-white font-bold mb-6">Consultas</h2>
+
       <div className="space-y-5">
-        {consultas.map(c => (
+        {consultas.map((c) => (
           <div
             key={c.id}
             className="bg-white text-black rounded-xl shadow-md p-5 border border-gray-200"
@@ -67,16 +93,19 @@ export default function Mails({ operadorId }) {
             <p className="font-bold text-lg mb-1">{c.cliente}:</p>
             <p className="mb-3 font-medium">Mensaje: {c.mensaje}</p>
 
+            {/* Si no fue respondida aún */}
             {!c.respondida && (
               <>
                 <textarea
                   className="w-full border border-gray-300 rounded-md p-3 mb-3 resize-none focus:outline-none focus:ring-2 focus:ring-black"
                   placeholder="Responder..."
                   value={c.respuesta}
-                  onChange={e =>
-                    setConsultas(prev =>
-                      prev.map(x =>
-                        x.id === c.id ? { ...x, respuesta: e.target.value } : x
+                  onChange={(e) =>
+                    setConsultas((prev) =>
+                      prev.map((x) =>
+                        x.id === c.id
+                          ? { ...x, respuesta: e.target.value }
+                          : x
                       )
                     )
                   }
@@ -96,9 +125,10 @@ export default function Mails({ operadorId }) {
               </>
             )}
 
+            {/* Si ya fue respondida */}
             {c.respondida && (
               <p className="mt-3 font-bold text-green-600">
-                Respuesta: {c.respuesta}
+                Respuesta enviada: {c.respuesta}
               </p>
             )}
           </div>

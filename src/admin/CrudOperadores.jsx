@@ -1,178 +1,151 @@
 import { useState, useEffect } from "react";
 
 export default function UsuariosAdmin() {
-  const [usuarios, setUsuarios] = useState([]);
+  const [clientes, setClientes] = useState([]);
+  const [operadores, setOperadores] = useState([]);
+  const [administradores, setAdministradores] = useState([]);
+  const [mostrarInactivos, setMostrarInactivos] = useState(false);
+  const [usuarioSeleccionado, setUsuarioSeleccionado] = useState(null);
   const [mostrarModal, setMostrarModal] = useState(false);
-  const [usuarioRol, setUsuarioRol] = useState({
-    nombre: "",
-    apellido: "",
-    correo: "",
-    contraseña: "",
-    rol: "OPERADOR",
-  });
   const [mensaje, setMensaje] = useState("");
   const [bloqueoClick, setBloqueoClick] = useState(false);
 
-  const admin= JSON.parse(localStorage.getItem("usuario"));
+  const admin = JSON.parse(localStorage.getItem("usuario"));
+  const adminId = admin?.id;
 
-  const adminId = admin.id; // ⚠️ ID real del administrador logueado (ajústalo según tu DB)
-
-  // 🔹 Obtener usuarios activos (operadores y administradores)
+  // 🔹 Obtener usuarios
   const obtenerUsuarios = async () => {
     try {
-      const resp = await fetch("http://127.0.0.1:5000/api/users");
-      const data = await resp.json();
+      const tipo = mostrarInactivos ? "_inactivos" : "";
+      const [respClientes, respOperadores, respAdmins] = await Promise.all([
+        fetch(`http://127.0.0.1:5000/api/users/clientes${tipo}`),
+        fetch(`http://127.0.0.1:5000/api/users/operadores${tipo}`),
+        fetch(`http://127.0.0.1:5000/api/users/administradores${tipo}`),
+      ]);
 
-      if (resp.ok) {
-        // Mostrar todos los usuarios para que se puedan promocionar
-        setUsuarios(data);
-      } else {
-        setMensaje(data.error || "Error al obtener usuarios");
-      }
+      setClientes(await respClientes.json());
+      setOperadores(await respOperadores.json());
+      setAdministradores(await respAdmins.json());
     } catch (err) {
       console.error("Error al obtener usuarios:", err);
-      setMensaje("Error en la conexión con la API");
+      setMensaje("Error: no se pudo conectar con la API");
     }
   };
 
   useEffect(() => {
     obtenerUsuarios();
-  }, []);
+  }, [mostrarInactivos]);
 
-  // 🔹 Cambiar estado activo/inactivo
-  const toggleActivo = async (usuario) => {
-    if (bloqueoClick) return;
-    setBloqueoClick(true);
-
-    try {
-      const resp = await fetch(`http://127.0.0.1:5000/api/users/${usuario.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id_admin: adminId,
-          id: usuario.id,
-          activo: !usuario.activo,
-        }),
-      });
-
-      const data = await resp.json();
-      if (resp.ok) {
-        setMensaje("Estado del usuario actualizado correctamente ✅");
-        obtenerUsuarios();
-      } else {
-        setMensaje(data.error || "Error al actualizar estado del usuario ❌");
-      }
-    } catch (err) {
-      console.error("Error al cambiar estado:", err);
-      setMensaje("Error en la conexión con la API");
-    } finally {
-      setTimeout(() => setBloqueoClick(false), 1000);
-    }
+  // 🔹 Editar datos del usuario
+  const editarUsuario = (usuario) => {
+    setUsuarioSeleccionado({ ...usuario });
+    setMostrarModal(true);
   };
 
-  // 🔹 Actualizar rol (buscando usuario por sus datos)
-  const actualizarRolUsuario = async (e) => {
+  // 🔹 Actualizar datos
+  const actualizarUsuario = async (e) => {
     e.preventDefault();
     if (bloqueoClick) return;
     setBloqueoClick(true);
 
     try {
-      // 1️⃣ Buscar usuario en la API
-      const respUsuarios = await fetch("http://127.0.0.1:5000/api/users");
-      const usuariosData = await respUsuarios.json();
-
-      const usuarioEncontrado = usuariosData.find(
-        (u) =>
-          u.nombre.toLowerCase() === usuarioRol.nombre.toLowerCase() &&
-          u.apellido.toLowerCase() === usuarioRol.apellido.toLowerCase() &&
-          u.correo.toLowerCase() === usuarioRol.correo.toLowerCase() &&
-          u.contraseña === usuarioRol.contraseña
-      );
-
-      if (!usuarioEncontrado) {
-        setMensaje("❌ No se encontró ningún usuario con esos datos");
-        setBloqueoClick(false);
-        return;
-      }
-
-      // 2️⃣ Enviar actualización con id_admin e id del usuario
       const resp = await fetch(
-        `http://127.0.0.1:5000/api/users/${usuarioEncontrado.id}`,
+        `http://127.0.0.1:5000/api/users/${usuarioSeleccionado.id}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             id_admin: adminId,
-            id: usuarioEncontrado.id,
-            nombre: usuarioEncontrado.nombre,
-            apellido: usuarioEncontrado.apellido,
-            rol: usuarioRol.rol,
-            activo: true,
+            nombre: usuarioSeleccionado.nombre,
+            apellido: usuarioSeleccionado.apellido,
+            correo: usuarioSeleccionado.correo,
+            telefono: usuarioSeleccionado.telefono,
+            pais_emision: usuarioSeleccionado.pais_emision,
+            rol: usuarioSeleccionado.rol,
+            contraseña: usuarioSeleccionado.contraseña,
           }),
         }
       );
 
-      let data;
-      try {
-        data = await resp.json();
-      } catch {
-        const texto = await resp.text();
-        console.warn("Respuesta no JSON:", texto);
-        data = { error: texto };
-      }
+      const data = await resp.json();
 
       if (resp.ok) {
-        setMensaje("✅ Rol actualizado correctamente");
+        setMensaje("Usuario actualizado con éxito");
         setMostrarModal(false);
         obtenerUsuarios();
       } else {
-        setMensaje(data.error || "❌ Error al actualizar el rol del usuario");
+        setMensaje(data.error || "Error al actualizar usuario");
       }
     } catch (err) {
-      console.error("Error al actualizar rol:", err);
+      console.error("Error:", err);
       setMensaje("Error en la conexión con la API");
     } finally {
-      setTimeout(() => setBloqueoClick(false), 1000);
+      setTimeout(() => setBloqueoClick(false), 1200);
     }
   };
 
-  return (
-    <div className="p-6 bg-black min-h-screen text-white">
-      <h2 className="text-2xl font-semibold mb-4 text-center">
-        Gestión de Operadores y Administradores
-      </h2>
+  // 🔹 Cambiar estado activo/inactivo
+  const cambiarActivo = async (usuario) => {
+    if (usuario.id === adminId) {
+      setMensaje("No puedes desactivar tu propio usuario administrador");
+      return;
+    }
 
-      {mensaje && (
-        <p
-          className={`mb-4 text-center font-semibold ${
-            mensaje.includes("✅")
-              ? "text-green-400"
-              : mensaje.includes("❌")
-              ? "text-red-400"
-              : "text-yellow-400"
-          }`}
-        >
-          {mensaje}
-        </p>
-      )}
+    try {
+      if (usuario.activo) {
+        // 🔸 Dar de baja (DELETE)
+        const resp = await fetch(
+          `http://127.0.0.1:5000/api/users/${usuario.id}`,
+          {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id_admin: adminId }),
+          }
+        );
+        const data = await resp.json();
+        if (resp.ok) {
+          setMensaje("Usuario dado de baja correctamente");
+          obtenerUsuarios();
+        } else {
+          setMensaje(data.error || "Error al dar de baja al usuario");
+        }
+      } else {
+        // 🔹 Reactivar (PUT)
+        const resp = await fetch(
+          `http://127.0.0.1:5000/api/users/${usuario.id}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id_admin: adminId,
+              nombre: usuario.nombre,
+              apellido: usuario.apellido,
+              correo: usuario.correo,
+              telefono: usuario.telefono,
+              pais_emision: usuario.pais_emision,
+              rol: usuario.rol,
+              contraseña: usuario.contraseña,
+              activo: true,
+            }),
+          }
+        );
+        const data = await resp.json();
+        if (resp.ok) {
+          setMensaje("Usuario reactivado correctamente");
+          obtenerUsuarios();
+        } else {
+          setMensaje(data.error || "Error al reactivar usuario");
+        }
+      }
+    } catch (err) {
+      console.error("Error al cambiar estado del usuario:", err);
+      setMensaje("Error en la conexión con la API");
+    }
+  };
 
-      <div className="flex justify-between items-center mb-4">
-        <button
-          onClick={() => setMostrarModal(true)}
-          className="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
-        >
-          Cambiar Rol de Usuario
-        </button>
-
-        <button
-          onClick={obtenerUsuarios}
-          className="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-600 transition"
-        >
-          Actualizar Lista
-        </button>
-      </div>
-
-      {/* Tabla de usuarios */}
+  const renderTabla = (titulo, lista) => (
+    <div className="mb-8">
+      <h3 className="text-xl font-semibold mb-2 text-blue-400">{titulo}</h3>
       <div className="overflow-x-auto">
         <table className="w-full border border-gray-700 bg-gray-900 rounded-lg">
           <thead className="bg-gray-800 text-gray-200">
@@ -183,90 +156,191 @@ export default function UsuariosAdmin() {
               <th className="px-3 py-2 border border-gray-700">Correo</th>
               <th className="px-3 py-2 border border-gray-700">Rol</th>
               <th className="px-3 py-2 border border-gray-700">Activo</th>
+              <th className="px-3 py-2 border border-gray-700">Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {usuarios.map((u) => (
-              <tr
-                key={u.id}
-                className="hover:bg-gray-800 transition text-gray-100"
-              >
-                <td className="border border-gray-700 px-3 py-2">{u.id}</td>
-                <td className="border border-gray-700 px-3 py-2">{u.nombre}</td>
-                <td className="border border-gray-700 px-3 py-2">
-                  {u.apellido}
-                </td>
-                <td className="border border-gray-700 px-3 py-2">{u.correo}</td>
-                <td className="border border-gray-700 px-3 py-2">{u.rol}</td>
-                <td className="border border-gray-700 px-3 py-2 text-center">
-                  <input
-                    type="checkbox"
-                    checked={u.activo}
-                    onChange={() => toggleActivo(u)}
-                    className="w-5 h-5 accent-green-600"
-                  />
+            {lista.length > 0 ? (
+              lista.map((u) => (
+                <tr key={u.id} className="hover:bg-gray-800 transition">
+                  <td className="border border-gray-700 px-3 py-2">{u.id}</td>
+                  <td className="border border-gray-700 px-3 py-2">
+                    {u.nombre}
+                  </td>
+                  <td className="border border-gray-700 px-3 py-2">
+                    {u.apellido}
+                  </td>
+                  <td className="border border-gray-700 px-3 py-2">
+                    {u.correo}
+                  </td>
+                  <td className="border border-gray-700 px-3 py-2">{u.rol}</td>
+                  <td className="border border-gray-700 px-3 py-2 text-center">
+                    <input
+                      type="checkbox"
+                      checked={u.activo}
+                      onChange={() => cambiarActivo(u)}
+                      disabled={u.id === adminId}
+                      className="w-5 h-5 cursor-pointer accent-green-600"
+                    />
+                  </td>
+                  <td className="border border-gray-700 px-3 py-2 text-center">
+                    <button
+                      onClick={() => editarUsuario(u)}
+                      className="bg-yellow-600 hover:bg-yellow-500 px-3 py-1 rounded text-white"
+                    >
+                      Editar
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td
+                  colSpan="7"
+                  className="text-center py-3 text-gray-400 italic"
+                >
+                  No hay usuarios en esta categoría.
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>
+    </div>
+  );
 
-      {/* Modal para cambiar rol */}
-      {mostrarModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center">
-          <div className="bg-gray-900 text-white rounded-lg p-6 w-[400px] shadow-lg border border-gray-700">
+  return (
+    <div className="p-6 bg-black min-h-screen text-white">
+      <h2 className="text-2xl font-semibold mb-4 text-center">
+        Gestión de Usuarios (Clientes / Operadores / Administradores)
+      </h2>
+
+      {mensaje && (
+        <p
+          className={`mb-4 text-center font-semibold ${
+            mensaje.toLowerCase().includes("éxito") ||
+            mensaje.toLowerCase().includes("correctamente")
+              ? "text-green-400"
+              : mensaje.toLowerCase().includes("error")
+              ? "text-red-400"
+              : "text-yellow-400"
+          }`}
+        >
+          {mensaje}
+        </p>
+      )}
+
+      <div className="flex justify-between items-center mb-6">
+        <button
+          onClick={() => setMostrarInactivos(!mostrarInactivos)}
+          className="bg-blue-700 hover:bg-blue-600 px-4 py-2 rounded"
+        >
+          {mostrarInactivos ? "Mostrar Activos" : "Mostrar Inactivos"}
+        </button>
+
+        <button
+          onClick={obtenerUsuarios}
+          className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded"
+        >
+          Actualizar Listas
+        </button>
+      </div>
+
+      {renderTabla("Clientes", clientes)}
+      {renderTabla("Operadores", operadores)}
+      {renderTabla("Administradores", administradores)}
+
+      {mostrarModal && usuarioSeleccionado && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center">
+          <div className="bg-gray-900 text-white rounded-lg p-6 w-[420px] shadow-lg border border-gray-700">
             <h3 className="text-xl font-semibold mb-4 text-center">
-              Actualizar Rol de Usuario
+              Editar Usuario
             </h3>
-            <form onSubmit={actualizarRolUsuario} className="space-y-3">
+            <form onSubmit={actualizarUsuario} className="space-y-3">
               <input
                 type="text"
                 placeholder="Nombre"
-                className="w-full bg-gray-800 text-white p-2 rounded border border-gray-600 focus:outline-none"
-                value={usuarioRol.nombre}
+                value={usuarioSeleccionado.nombre}
                 onChange={(e) =>
-                  setUsuarioRol({ ...usuarioRol, nombre: e.target.value })
+                  setUsuarioSeleccionado({
+                    ...usuarioSeleccionado,
+                    nombre: e.target.value,
+                  })
                 }
-                required
+                className="w-full bg-gray-800 p-2 rounded border border-gray-600"
               />
               <input
                 type="text"
                 placeholder="Apellido"
-                className="w-full bg-gray-800 text-white p-2 rounded border border-gray-600 focus:outline-none"
-                value={usuarioRol.apellido}
+                value={usuarioSeleccionado.apellido}
                 onChange={(e) =>
-                  setUsuarioRol({ ...usuarioRol, apellido: e.target.value })
+                  setUsuarioSeleccionado({
+                    ...usuarioSeleccionado,
+                    apellido: e.target.value,
+                  })
                 }
-                required
+                className="w-full bg-gray-800 p-2 rounded border border-gray-600"
               />
               <input
                 type="email"
                 placeholder="Correo"
-                className="w-full bg-gray-800 text-white p-2 rounded border border-gray-600 focus:outline-none"
-                value={usuarioRol.correo}
+                value={usuarioSeleccionado.correo}
                 onChange={(e) =>
-                  setUsuarioRol({ ...usuarioRol, correo: e.target.value })
+                  setUsuarioSeleccionado({
+                    ...usuarioSeleccionado,
+                    correo: e.target.value,
+                  })
                 }
-                required
+                className="w-full bg-gray-800 p-2 rounded border border-gray-600"
+              />
+              <input
+                type="text"
+                placeholder="Teléfono"
+                value={usuarioSeleccionado.telefono || ""}
+                onChange={(e) =>
+                  setUsuarioSeleccionado({
+                    ...usuarioSeleccionado,
+                    telefono: e.target.value,
+                  })
+                }
+                className="w-full bg-gray-800 p-2 rounded border border-gray-600"
+              />
+              <input
+                type="text"
+                placeholder="País"
+                value={usuarioSeleccionado.pais_emision || ""}
+                onChange={(e) =>
+                  setUsuarioSeleccionado({
+                    ...usuarioSeleccionado,
+                    pais_emision: e.target.value,
+                  })
+                }
+                className="w-full bg-gray-800 p-2 rounded border border-gray-600"
               />
               <input
                 type="password"
                 placeholder="Contraseña"
-                className="w-full bg-gray-800 text-white p-2 rounded border border-gray-600 focus:outline-none"
-                value={usuarioRol.contraseña}
+                value={usuarioSeleccionado.contraseña || ""}
                 onChange={(e) =>
-                  setUsuarioRol({ ...usuarioRol, contraseña: e.target.value })
+                  setUsuarioSeleccionado({
+                    ...usuarioSeleccionado,
+                    contraseña: e.target.value,
+                  })
                 }
-                required
+                className="w-full bg-gray-800 p-2 rounded border border-gray-600"
               />
+
               <select
-                className="w-full bg-gray-800 text-white p-2 rounded border border-gray-600 focus:outline-none"
-                value={usuarioRol.rol}
+                value={usuarioSeleccionado.rol}
                 onChange={(e) =>
-                  setUsuarioRol({ ...usuarioRol, rol: e.target.value })
+                  setUsuarioSeleccionado({
+                    ...usuarioSeleccionado,
+                    rol: e.target.value,
+                  })
                 }
+                className="w-full bg-gray-800 p-2 rounded border border-gray-600"
               >
+                <option value="CLIENTE">Cliente</option>
                 <option value="OPERADOR">Operador</option>
                 <option value="ADMINISTRADOR">Administrador</option>
               </select>
@@ -274,14 +348,14 @@ export default function UsuariosAdmin() {
               <div className="flex justify-between mt-4">
                 <button
                   type="submit"
-                  className="bg-green-700 px-4 py-2 rounded hover:bg-green-600 transition"
+                  className="bg-green-700 px-4 py-2 rounded hover:bg-green-600"
                 >
-                  Actualizar Rol
+                  Guardar Cambios
                 </button>
                 <button
                   type="button"
                   onClick={() => setMostrarModal(false)}
-                  className="bg-red-700 px-4 py-2 rounded hover:bg-red-600 transition"
+                  className="bg-red-700 px-4 py-2 rounded hover:bg-red-600"
                 >
                   Cancelar
                 </button>
