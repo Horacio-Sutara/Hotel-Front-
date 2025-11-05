@@ -74,9 +74,12 @@ useEffect(() => {
       const nuevasHabitaciones = {};
 
       data.forEach((h) => {
+        if (h.estado !== "DISPONIBLE") return;
         // Asignar imagen según el tipo o nombre
         let imagen = habitacionEstandar; // por defecto
         const tipo = (h.tipo || h.nombre || "").toLowerCase();
+
+        console.log(h.tipo, h.imagen_url);
 
         if (tipo.includes("DELUXE")) imagen = habitacionDeluxe;
         else if (tipo.includes("SUITE")) imagen = habitacionSuite;
@@ -85,7 +88,7 @@ useEffect(() => {
 
         nuevasHabitaciones[`api_${h.id}`] = {
           nombre: h.nombre,
-          img: h.img || imagen, // usa la imagen de la API si existe, si no la local
+          img: h.imagen_url || imagen, // usa la imagen de la API si existe, si no la local
           descripcion: h.descripcion,
           precio: h.precio,
           capacidad: h.capacidad,

@@ -1,8 +1,11 @@
 import { useState, useEffect } from "react";
 
-export default function Mails({ operadorId }) {
+export default function Mails({  }) {
   const [consultas, setConsultas] = useState([]);
   const [loadingIds, setLoadingIds] = useState([]);
+
+  const operador = JSON.parse(localStorage.getItem("usuario"));
+  const operadorId = operador?.id;
 
   // 🔹 Cargar consultas al iniciar
   useEffect(() => {

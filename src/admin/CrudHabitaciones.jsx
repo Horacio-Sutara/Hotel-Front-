@@ -25,7 +25,8 @@ export default function CrudHabitaciones() {
 
   const [editando, setEditando] = useState(null);
   const [editData, setEditData] = useState({});
-  const ADMIN_ID = 1;
+  const admin = JSON.parse(localStorage.getItem("usuario"));
+  const ADMIN_ID = admin?.id;
 
   const imagenesLocales = {
     ESTANDAR: [estandar1, estandar2, estandar3],
@@ -159,6 +160,8 @@ export default function CrudHabitaciones() {
           body: JSON.stringify(editData || {}), //  aseguramos que haya cuerpo JSON
         }
       );
+
+      console.log(editData);
 
       const result = await response.json();
 

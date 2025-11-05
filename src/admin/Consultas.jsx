@@ -4,9 +4,8 @@ export default function Consultas() {
   const [consultas, setConsultas] = useState([]);
   const [respuestas, setRespuestas] = useState([]);
   const [mostrarNoRespondidas, setMostrarNoRespondidas] = useState(false);
-
-  // 🔹 Suponiendo que el id del admin está guardado en localStorage al hacer login
-  const adminId = localStorage.getItem("id");
+  const admin = JSON.parse(localStorage.getItem("usuario"));
+  const adminId = admin?.id;
 
   // Cargar consultas
   useEffect(() => {
@@ -115,9 +114,9 @@ export default function Consultas() {
             <table className="w-full border border-zinc-700 text-gray-300 text-lg">
               <thead className="bg-zinc-800">
                 <tr>
-                  <th className="py-4 px-6 border-b border-zinc-700 text-left">ID Consulta</th>
-                  <th className="py-4 px-6 border-b border-zinc-700 text-left">ID Operador</th>
-                  <th className="py-4 px-6 border-b border-zinc-700 text-left">Mensaje</th>
+                  <th className="py-4 px-6 border-b border-zinc-700 text-left">N° Consulta</th>
+                  <th className="py-4 px-6 border-b border-zinc-700 text-left">Atendido por</th>
+                  <th className="py-4 px-6 border-b border-zinc-700 text-left">Respuesta</th>
                   <th className="py-4 px-6 border-b border-zinc-700 text-left">Fecha Respuesta</th>
                 </tr>
               </thead>
