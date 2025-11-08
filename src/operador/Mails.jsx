@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 
-export default function Mails({  }) {
+export default function Mails() {
   const [consultas, setConsultas] = useState([]);
   const [loadingIds, setLoadingIds] = useState([]);
+  const [filtro, setFiltro] = useState("todas"); // 🔹 "todas", "pendientes", "respondidas"
 
   const operador = JSON.parse(localStorage.getItem("usuario"));
   const operadorId = operador?.id;
@@ -47,7 +48,6 @@ export default function Mails({  }) {
 
       const data = await response.json();
 
-      // ✅ Verificar respuesta del backend
       if (!response.ok) {
         if (response.status === 403) {
           throw new Error("No tienes permiso para responder esta consulta (403).");
@@ -58,16 +58,13 @@ export default function Mails({  }) {
         }
       }
 
-      // ✅ Si el servidor confirmó la creación
       console.log("Respuesta enviada correctamente:", data.mensaje);
       alert("Respuesta enviada correctamente ✅");
 
       // Actualiza estado local
       setConsultas((prev) =>
         prev.map((c) =>
-          c.id === idConsulta
-            ? { ...c, respondida: true, respuesta: texto }
-            : c
+          c.id === idConsulta ? { ...c, respondida: true, respuesta: texto } : c
         )
       );
     } catch (error) {
@@ -78,17 +75,54 @@ export default function Mails({  }) {
     }
   };
 
-  // 🔹 Borrar consultas respondidas (opcional)
-  const borrarRespondidas = () => {
-    setConsultas((prev) => prev.filter((c) => !c.respondida));
-  };
+  // 🔹 Filtrar consultas según el estado
+  const consultasFiltradas = consultas.filter((c) => {
+    if (filtro === "pendientes") return !c.respondida;
+    if (filtro === "respondidas") return c.respondida;
+    return true; // todas
+  });
 
   return (
     <div className="p-6">
       <h2 className="text-2xl text-white font-bold mb-6">Consultas</h2>
 
+      {/* 🔹 Controles de filtro */}
+      <div className="flex gap-3 mb-5">
+        <button
+          onClick={() => setFiltro("todas")}
+          className={`px-4 py-2 rounded-md ${
+            filtro === "todas"
+              ? "bg-zinc-700 text-white"
+              : "bg-gray-200 text-black hover:bg-gray-300"
+          }`}
+        >
+          Todas
+        </button>
+        <button
+          onClick={() => setFiltro("pendientes")}
+          className={`px-4 py-2 rounded-md ${
+            filtro === "pendientes"
+              ? "bg-yellow-500 text-white"
+              : "bg-gray-200 text-black hover:bg-gray-300"
+          }`}
+        >
+          Pendientes
+        </button>
+        <button
+          onClick={() => setFiltro("respondidas")}
+          className={`px-4 py-2 rounded-md ${
+            filtro === "respondidas"
+              ? "bg-green-600 text-white"
+              : "bg-gray-200 text-black hover:bg-gray-300"
+          }`}
+        >
+          Respondidas
+        </button>
+      </div>
+
+      {/* 🔹 Lista de consultas */}
       <div className="space-y-5">
-        {consultas.map((c) => (
+        {consultasFiltradas.map((c) => (
           <div
             key={c.id}
             className="bg-white text-black rounded-xl shadow-md p-5 border border-gray-200"
@@ -96,7 +130,7 @@ export default function Mails({  }) {
             <p className="font-bold text-lg mb-1">{c.cliente}:</p>
             <p className="mb-3 font-medium">Mensaje: {c.mensaje}</p>
 
-            {/* Si no fue respondida aún */}
+            {/* Si no fue respondida */}
             {!c.respondida && (
               <>
                 <textarea
@@ -130,20 +164,11 @@ export default function Mails({  }) {
 
             {/* Si ya fue respondida */}
             {c.respondida && (
-              <p className="mt-3 font-bold text-green-600">
-                Respuesta enviada: {c.respuesta}
-              </p>
+              <p className="mt-3 font-bold text-green-600">Respuesta enviada</p>
             )}
           </div>
         ))}
       </div>
-
-      <button
-        className="mt-6 px-4 py-2 rounded-md bg-red-500 text-white hover:bg-red-600"
-        onClick={borrarRespondidas}
-      >
-        Borrar historial de mails
-      </button>
     </div>
   );
 }

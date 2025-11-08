@@ -10,19 +10,14 @@ import "../calendarDark.css";
 export default function Habitaciones() {
   const [tipo, setTipo] = useState("estandar");
   const [mostrarCalendario, setMostrarCalendario] = useState(false);
+  const [mostrarToast, setMostrarToast] = useState(false);
   const [reserva, setReserva] = useState({
     fechas: [new Date(), new Date()],
     adultos: 1,
     ninos: 0,
   });
   const [paso, setPaso] = useState(0);
-  const [usuario, setUsuario] = useState({
-    nombre: "",
-    apellido: "",
-    dni: "",
-    telefono: "",
-    email: "",
-  });
+  const [usuario, setUsuario] = useState(null); // se llenará con los datos del login
   const [pago, setPago] = useState({
     tarjetaRaw: "",
     tarjetaFormateada: "",
@@ -34,8 +29,20 @@ export default function Habitaciones() {
     cvvValid: false,
   });
 
+  // ---------- Obtener usuario logueado ----------
+  useEffect(() => {
+    const usuarioGuardado = localStorage.getItem("usuario");
+    if (usuarioGuardado) {
+      try {
+        setUsuario(JSON.parse(usuarioGuardado));
+      } catch {
+        console.error("Error al leer usuario del localStorage");
+      }
+    }
+  }, []);
+
   const diasOcupados = ["2025-10-10", "2025-10-11", "2025-10-14", "2025-10-15"];
-  const pasosTexto = ["Revisar Reserva", "Datos Personales", "Método de Pago"];
+  const pasosTexto = ["Revisar Reserva", "Método de Pago"];
 
   // ---------- Habitaciones predeterminadas ----------
   const habitacionesPredeterminadas = {
@@ -64,48 +71,37 @@ export default function Habitaciones() {
 
   const [habitaciones, setHabitaciones] = useState(habitacionesPredeterminadas);
 
-// ---------- Traer habitaciones de la API ----------
-useEffect(() => {
-  const fetchHabitaciones = async () => {
-    try {
-      const res = await fetch("http://127.0.0.1:5000/api/habitaciones");
-      const data = await res.json();
+  // ---------- Traer habitaciones de la API ----------
+  useEffect(() => {
+    const fetchHabitaciones = async () => {
+      try {
+        const res = await fetch("http://127.0.0.1:5000/api/habitaciones");
+        const data = await res.json();
+        const nuevasHabitaciones = {};
+        data.forEach((h) => {
+          if (h.estado !== "DISPONIBLE") return;
+          let imagen = habitacionEstandar;
+          const tipo = (h.tipo || h.nombre || "").toLowerCase();
+          if (tipo.includes("deluxe")) imagen = habitacionDeluxe;
+          else if (tipo.includes("suite")) imagen = habitacionSuite;
+          else if (tipo.includes("estándar") || tipo.includes("estandar"))
+            imagen = habitacionEstandar;
 
-      const nuevasHabitaciones = {};
-
-      data.forEach((h) => {
-        if (h.estado !== "DISPONIBLE") return;
-        // Asignar imagen según el tipo o nombre
-        let imagen = habitacionEstandar; // por defecto
-        const tipo = (h.tipo || h.nombre || "").toLowerCase();
-
-        console.log(h.tipo, h.imagen_url);
-
-        if (tipo.includes("DELUXE")) imagen = habitacionDeluxe;
-        else if (tipo.includes("SUITE")) imagen = habitacionSuite;
-        else if (tipo.includes("ESTÁNDAR") || tipo.includes("ESTANDAR"))
-          imagen = habitacionEstandar;
-
-        nuevasHabitaciones[`api_${h.id}`] = {
-          nombre: h.nombre,
-          img: h.imagen_url || imagen, // usa la imagen de la API si existe, si no la local
-          descripcion: h.descripcion,
-          precio: h.precio,
-          capacidad: h.capacidad,
-        };
-      });
-
-      // Combinar predeterminadas con las de la API
-      setHabitaciones({ ...habitacionesPredeterminadas, ...nuevasHabitaciones });
-    } catch (error) {
-      console.error("Error al obtener habitaciones de la API:", error);
-    }
-  };
-
-  fetchHabitaciones();
-}, []);
-
-
+          nuevasHabitaciones[`api_${h.id}`] = {
+            nombre: h.nombre,
+            img: h.imagen_url || imagen,
+            descripcion: h.descripcion,
+            precio: h.precio,
+            capacidad: h.capacidad,
+          };
+        });
+        setHabitaciones({ ...habitacionesPredeterminadas, ...nuevasHabitaciones });
+      } catch (error) {
+        console.error("Error al obtener habitaciones de la API:", error);
+      }
+    };
+    fetchHabitaciones();
+  }, []);
 
   const habitacion = habitaciones[tipo];
 
@@ -116,7 +112,33 @@ useEffect(() => {
       : "bg-green-600 text-white rounded-full";
   };
 
-  // ---------- Handlers y validaciones de pago (igual que tu código original) ----------
+  // ---------- Métodos auxiliares ----------
+  const handleConsultarDisponibilidad = () => {
+    if (!usuario) {
+      setMostrarToast(true);
+      setTimeout(() => setMostrarToast(false), 3000);
+      return;
+    }
+    setMostrarCalendario(true);
+  };
+
+  const handleConfirmarPago = () => {
+    if (!isPaymentReady()) return alert("Completa correctamente los datos de la tarjeta.");
+    alert("¡Reserva y pago confirmados!");
+    setPaso(0);
+    setPago({
+      tarjetaRaw: "",
+      tarjetaFormateada: "",
+      vencimiento: "",
+      cvv: "",
+      cardType: null,
+      cardValid: false,
+      expiryValid: false,
+      cvvValid: false,
+    });
+  };
+
+  // ---------- Validaciones tarjeta ----------
   const detectCardType = (numbersOnly) => {
     if (!numbersOnly) return null;
     if (/^4/.test(numbersOnly)) return "Visa";
@@ -173,7 +195,8 @@ useEffect(() => {
 
   const handleExpiryInput = (e) => {
     let raw = e.target.value.replace(/\D/g, "").slice(0, 4);
-    let formatted = raw.length >= 3 ? raw.slice(0, 2) + "/" + raw.slice(2) : raw.length === 2 ? raw + "/" : raw;
+    let formatted =
+      raw.length >= 3 ? raw.slice(0, 2) + "/" + raw.slice(2) : raw.length === 2 ? raw + "/" : raw;
     let expiryValid = false;
     if (formatted.length === 5) {
       const mm = parseInt(formatted.slice(0, 2), 10);
@@ -182,7 +205,8 @@ useEffect(() => {
       if (expiryValid) {
         const now = new Date();
         const fullYear = 2000 + yy;
-        expiryValid = new Date(fullYear, mm, 0, 23, 59, 59) >= new Date(now.getFullYear(), now.getMonth(), 1);
+        expiryValid =
+          new Date(fullYear, mm, 0, 23, 59, 59) >= new Date(now.getFullYear(), now.getMonth(), 1);
       }
     }
     setPago((p) => ({ ...p, vencimiento: formatted, expiryValid }));
@@ -196,32 +220,26 @@ useEffect(() => {
 
   const isPaymentReady = () => pago.cardValid && pago.expiryValid && pago.cvvValid;
 
-  const handleConfirmarPago = () => {
-    if (!isPaymentReady()) return alert("Completa correctamente los datos de la tarjeta.");
-    alert("¡Reserva y pago confirmados!");
-    setPaso(0);
-    setPago({ tarjetaRaw: "", tarjetaFormateada: "", vencimiento: "", cvv: "", cardType: null, cardValid: false, expiryValid: false, cvvValid: false });
-    setUsuario({ nombre: "", apellido: "", dni: "", telefono: "", email: "" });
-  };
-
-  // ---------- Validaciones datos personales ----------
-  const isNombreValido = /^[a-zA-Z]{2,50}$/.test(usuario.nombre);
-  const isApellidoValido = /^[a-zA-Z]{2,50}$/.test(usuario.apellido);
-  const isDniValido = /^\d{8}$/.test(usuario.dni);
-  const isTelefonoValido = /^\d{8,15}$/.test(usuario.telefono);
-  const isEmailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(usuario.email);
-  const datosPersonalesValidos = isNombreValido && isApellidoValido && isDniValido && isTelefonoValido && isEmailValido;
-
+  // ---------- Render ----------
   return (
     <section className="min-h-screen bg-zinc-950 text-white py-0 px-0">
+      {/* Toast flotante */}
+      {mostrarToast && (
+        <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50">
+    <div className="bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg text-center animate-fadeIn">  
+            Inicie sesión para reservar
+          </div>
+        </div>
+      )}
+
       <div className="w-full h-64 md:h-80 lg:h-96 overflow-hidden">
         <img src={portadaHabitaciones} alt="Portada habitaciones" className="w-full h-full object-cover object-center" />
       </div>
 
+      {/* Paso 0 */}
       {paso === 0 && (
         <div className="container mx-auto max-w-5xl px-6 py-20">
           <h2 className="text-5xl font-bold text-center mb-10 text-white-400">Habitaciones</h2>
-
           <div className="flex flex-col items-center mb-12">
             <label htmlFor="tipo" className="text-gray-300 mb-3 text-lg">Elegí una habitación:</label>
             <select
@@ -249,9 +267,11 @@ useEffect(() => {
                 <h3 className="text-3xl font-semibold text-white-400">{habitacion.nombre}</h3>
                 <p className="text-gray-300"><strong className="text-white">Capacidad:</strong> {habitacion.capacidad} personas</p>
                 <p className="text-gray-300">{habitacion.descripcion}</p>
-
                 <div className="mt-6">
-                  <button onClick={() => setMostrarCalendario(true)} className="bg-white hover:bg-gray-400 text-black px-6 py-2 rounded-lg transition font-semibold">
+                  <button
+                    onClick={handleConsultarDisponibilidad}
+                    className="bg-white hover:bg-gray-400 text-black px-6 py-2 rounded-lg transition font-semibold"
+                  >
                     Consultar disponibilidad
                   </button>
                 </div>
@@ -261,15 +281,13 @@ useEffect(() => {
         </div>
       )}
 
-      {/* Modal calendario (paso 0) */}
+      {/* Modal calendario */}
       {mostrarCalendario && (
         <div className="fixed inset-0 bg-black/80 flex justify-center items-center z-50">
           <div className="bg-zinc-900 p-8 rounded-2xl shadow-lg w-[90%] md:w-[600px] text-white">
             <h3 className="text-2xl font-bold mb-4 text-center">Consultar Disponibilidad</h3>
             <Calendar
-              onChange={(dates) =>
-                setReserva((r) => ({ ...r, fechas: dates }))
-              }
+              onChange={(dates) => setReserva((r) => ({ ...r, fechas: dates }))}
               selectRange={true}
               value={reserva.fechas}
               tileClassName={tileClassName}
@@ -281,9 +299,7 @@ useEffect(() => {
                   type="number"
                   min="1"
                   value={reserva.adultos}
-                  onChange={(e) =>
-                    setReserva({ ...reserva, adultos: e.target.value })
-                  }
+                  onChange={(e) => setReserva({ ...reserva, adultos: e.target.value })}
                   className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white"
                 />
               </div>
@@ -293,22 +309,20 @@ useEffect(() => {
                   type="number"
                   min="0"
                   value={reserva.ninos}
-                  onChange={(e) =>
-                    setReserva({ ...reserva, ninos: e.target.value })
-                  }
+                  onChange={(e) => setReserva({ ...reserva, ninos: e.target.value })}
                   className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white"
                 />
               </div>
             </div>
             <div className="flex justify-end mt-6 gap-4">
-              <button
-                onClick={() => setMostrarCalendario(false)}
-                className="bg-gray-600 hover:bg-gray-700 text-black px-5 py-2 rounded-lg"
-              >
+              <button onClick={() => setMostrarCalendario(false)} className="bg-gray-600 hover:bg-gray-700 text-black px-5 py-2 rounded-lg">
                 Cancelar
               </button>
               <button
-                onClick={() => { setMostrarCalendario(false); setPaso(1); }}
+                onClick={() => {
+                  setMostrarCalendario(false);
+                  setPaso(1);
+                }}
                 className="bg-white hover:bg-gray-400 text-black px-5 py-2 rounded-lg"
               >
                 Continuar
@@ -318,239 +332,115 @@ useEffect(() => {
         </div>
       )}
 
-      {/* Pasos de reserva */}
-      {paso > 0 && (
+      {/* Paso 1: revisión reserva */}
+      {paso === 1 && (
         <div className="container mx-auto max-w-xl px-6 py-20 space-y-6">
-          <h2 className="text-3xl font-bold text-white mb-6 text-center">
-            {pasosTexto[paso - 1]}
-          </h2>
+          <h2 className="text-3xl font-bold text-white mb-6 text-center">{pasosTexto[0]}</h2>
+          <div className="bg-zinc-900 p-6 rounded-2xl space-y-4 text-gray-200">
+            <p><strong>Habitación:</strong> {habitacion.nombre}</p>
+            <p><strong>Fechas:</strong>{" "}
+              {Array.isArray(reserva.fechas)
+                ? reserva.fechas.map(d => d.toLocaleDateString()).join(" - ")
+                : reserva.fechas.toLocaleDateString()}
+            </p>
+            <p><strong>Adultos:</strong> {reserva.adultos}</p>
+            <p><strong>Niños:</strong> {reserva.ninos}</p>
 
-          {/* Paso 1: Revisar reserva */}
-          {paso === 1 && (
-            <div className="bg-zinc-900 p-6 rounded-2xl space-y-4 text-gray-200">
-              <p>
-                <strong>Habitación:</strong> {habitacion.nombre}
-              </p>
-              <p>
-                <strong>Fechas:</strong>{" "}
-                {Array.isArray(reserva.fechas)
-                  ? reserva.fechas.map(d => d.toLocaleDateString()).join(" - ")
-                  : reserva.fechas.toLocaleDateString()}
-              </p>
-              <p>
-                <strong>Adultos:</strong> {reserva.adultos}
-              </p>
-              <p>
-                <strong>Niños:</strong> {reserva.ninos}
-              </p>
-              <div className="flex justify-between mt-6">
-                <button
-                  onClick={() => setPaso(0)}
-                  className="bg-gray-600 px-5 py-2 rounded-lg hover:bg-gray-700"
-                >
-                  Volver
-                </button>
-                <button
-                  onClick={() => setPaso(2)}
-                  className="bg-white px-5 py-2 rounded-lg hover:bg-gray-400 text-black"
-                >
-                  Aceptar
-                </button>
+            {usuario && (
+              <div className="mt-4 border-t border-zinc-700 pt-4">
+                <h3 className="text-xl font-semibold mb-2 text-white">Datos del Usuario</h3>
+                <p><strong>Nombre:</strong> {usuario.nombre} {usuario.apellido}</p>
+                <p><strong>DNI:</strong> {usuario.numero_documento}</p>
+                <p><strong>Teléfono:</strong> {usuario.telefono}</p>
+                <p><strong>País:</strong> {usuario.pais_emision}</p>
+                <p><strong>Email:</strong> {usuario.email}</p>
+              </div>
+            )}
+
+            <div className="flex justify-between mt-6">
+              <button onClick={() => setPaso(0)} className="bg-gray-600 px-5 py-2 rounded-lg hover:bg-gray-700">
+                Volver
+              </button>
+              <button
+                onClick={() => setPaso(2)}
+                className="bg-white px-5 py-2 rounded-lg hover:bg-gray-400 text-black"
+              >
+                Aceptar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Paso 2: pago */}
+      {paso === 2 && (
+        <div className="container mx-auto max-w-xl px-6 py-20 space-y-6">
+          <h2 className="text-3xl font-bold text-white mb-6 text-center">{pasosTexto[1]}</h2>
+          <div className="bg-zinc-900 p-6 rounded-2xl space-y-4">
+            <div>
+              <input
+                type="text"
+                placeholder="Número de tarjeta"
+                value={pago.tarjetaFormateada}
+                onChange={handleCardInput}
+                className={`w-full px-3 py-2 rounded-lg border ${
+                  pago.cardValid ? "border-green-500"
+                                    : "border-zinc-700"
+                } bg-zinc-800 text-white`}
+              />
+              {pago.cardType && (
+                <p className="text-sm text-gray-400 mt-1">Tipo de tarjeta: {pago.cardType}</p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <input
+                  type="text"
+                  placeholder="MM/AA"
+                  value={pago.vencimiento}
+                  onChange={handleExpiryInput}
+                  className={`w-full px-3 py-2 rounded-lg border ${
+                    pago.expiryValid ? "border-green-500" : "border-zinc-700"
+                  } bg-zinc-800 text-white`}
+                />
+              </div>
+              <div>
+                <input
+                  type="password"
+                  placeholder="CVV"
+                  value={pago.cvv}
+                  onChange={handleCvvInput}
+                  className={`w-full px-3 py-2 rounded-lg border ${
+                    pago.cvvValid ? "border-green-500" : "border-zinc-700"
+                  } bg-zinc-800 text-white`}
+                />
               </div>
             </div>
-          )}
 
-          {/* Paso 2: Datos personales */}
-          {paso === 2 && (
-            <div className="bg-zinc-900 p-6 rounded-2xl space-y-4">
-              {/* Nombre */}
-              <div>
-                <input
-                  type="text"
-                  placeholder="Nombre"
-                  value={usuario.nombre}
-                  onChange={(e) =>
-                    setUsuario({ ...usuario, nombre: e.target.value })
-                  }
-                  className={`w-full px-3 py-2 rounded-lg border ${
-                    isNombreValido ? "border-green-500" : "border-red-500"
-                  } bg-zinc-800 text-white`}
-                />
-                {!isNombreValido && usuario.nombre.length > 0 && (
-                  <small className="text-red-500">2-50 letras</small>
-                )}
-              </div>
-
-              {/* Apellido */}
-              <div>
-                <input
-                  type="text"
-                  placeholder="Apellido"
-                  value={usuario.apellido}
-                  onChange={(e) =>
-                    setUsuario({ ...usuario, apellido: e.target.value })
-                  }
-                  className={`w-full px-3 py-2 rounded-lg border ${
-                    isApellidoValido ? "border-green-500" : "border-red-500"
-                  } bg-zinc-800 text-white`}
-                />
-                {!isApellidoValido && usuario.apellido.length > 0 && (
-                  <small className="text-red-500">2-50 letras</small>
-                )}
-              </div>
-
-              {/* DNI */}
-              <div>
-                <input
-                  type="text"
-                  placeholder="DNI"
-                  value={usuario.dni}
-                  onChange={(e) =>
-                    setUsuario({
-                      ...usuario,
-                      dni: e.target.value.replace(/\D/g, ""),
-                    })
-                  }
-                  className={`w-full px-3 py-2 rounded-lg border ${
-                    isDniValido ? "border-green-500" : "border-red-500"
-                  } bg-zinc-800 text-white`}
-                />
-                {!isDniValido && usuario.dni.length > 0 && (
-                  <small className="text-red-500">8 dígitos</small>
-                )}
-              </div>
-
-              {/* Teléfono */}
-              <div>
-                <input
-                  type="text"
-                  placeholder="Teléfono"
-                  value={usuario.telefono}
-                  onChange={(e) =>
-                    setUsuario({
-                      ...usuario,
-                      telefono: e.target.value.replace(/\D/g, ""),
-                    })
-                  }
-                  className={`w-full px-3 py-2 rounded-lg border ${
-                    isTelefonoValido ? "border-green-500" : "border-red-500"
-                  } bg-zinc-800 text-white`}
-                />
-                {!isTelefonoValido && usuario.telefono.length > 0 && (
-                  <small className="text-red-500">8-15 dígitos</small>
-                )}
-              </div>
-
-              {/* Email */}
-              <div>
-                <input
-                  type="email"
-                  placeholder="Email"
-                  value={usuario.email}
-                  onChange={(e) =>
-                    setUsuario({ ...usuario, email: e.target.value })
-                  }
-                  className={`w-full px-3 py-2 rounded-lg border ${
-                    isEmailValido ? "border-green-500" : "border-red-500"
-                  } bg-zinc-800 text-white`}
-                />
-                {!isEmailValido && usuario.email.length > 0 && (
-                  <small className="text-red-500">Email inválido</small>
-                )}
-              </div>
-
-              <div className="flex justify-between mt-4">
-                <button
-                  onClick={() => setPaso(1)}
-                  className="bg-gray-600 px-5 py-2 rounded-lg hover:bg-gray-700"
-                >
-                  Volver
-                </button>
-                <button
-                  onClick={() => setPaso(3)}
-                  disabled={!datosPersonalesValidos}
-                  className={`px-5 py-2 rounded-lg ${
-                    datosPersonalesValidos
-                      ? "bg-white text-black hover:bg-gray-400"
-                      : "bg-gray-700 text-gray-400 cursor-not-allowed"
-                  }`}
-                >
-                  Siguiente
-                </button>
-              </div>
+            <div className="flex justify-between mt-6">
+              <button
+                onClick={() => setPaso(1)}
+                className="bg-gray-600 hover:bg-gray-700 text-black px-5 py-2 rounded-lg"
+              >
+                Volver
+              </button>
+              <button
+                onClick={handleConfirmarPago}
+                disabled={!isPaymentReady()}
+                className={`px-5 py-2 rounded-lg font-semibold transition ${
+                  isPaymentReady()
+                    ? "bg-white hover:bg-gray-400 text-black"
+                    : "bg-gray-500 cursor-not-allowed text-gray-300"
+                }`}
+              >
+                Confirmar Pago
+              </button>
             </div>
-          )}
-
-          {/* Paso 3: Pago */}
-          {paso === 3 && (
-            <div className="bg-zinc-900 p-6 rounded-2xl space-y-4">
-              <div>
-                <input
-                  type="text"
-                  placeholder="Número de tarjeta"
-                  value={pago.tarjetaFormateada}
-                  onChange={handleCardInput}
-                  className={`w-full px-3 py-2 rounded-lg border ${
-                    pago.cardValid ? "border-green-500" : "border-red-500"
-                  } bg-zinc-800 text-white`}
-                />
-                {pago.cardType && (
-                  <small className="text-gray-300">
-                    Tipo: {pago.cardType}
-                  </small>
-                )}
-              </div>
-              <div className="flex gap-4">
-                <div className="w-1/2 flex flex-col">
-                  <input
-                    type="text"
-                    placeholder="MM/AA"
-                    value={pago.vencimiento}
-                    onChange={handleExpiryInput}
-                    className={`px-3 py-2 rounded-lg border ${
-                      pago.expiryValid ? "border-green-500" : "border-red-500"
-                    } bg-zinc-800 text-white`}
-                  />
-                  {!pago.expiryValid && pago.vencimiento.length === 5 && (
-                    <small className="text-red-500 mt-1">Fecha no válida</small>
-                  )}
-                </div>
-                <div className="w-1/2 flex flex-col">
-                  <input
-                    type="text"
-                    placeholder="CVV"
-                    value={pago.cvv}
-                    onChange={handleCvvInput}
-                    className={`px-3 py-2 rounded-lg border ${
-                      pago.cvvValid ? "border-green-500" : "border-red-500"
-                    } bg-zinc-800 text-white`}
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-between mt-4">
-                <button
-                  onClick={() => setPaso(2)}
-                  className="bg-gray-600 px-5 py-2 rounded-lg hover:bg-gray-700"
-                >
-                  Volver
-                </button>
-                <button
-                  onClick={handleConfirmarPago}
-                  disabled={!isPaymentReady()}
-                  className={`px-5 py-2 rounded-lg ${
-                    isPaymentReady()
-                      ? "bg-white text-black hover:bg-gray-400"
-                      : "bg-gray-700 text-gray-400 cursor-not-allowed"
-                  }`}
-                >
-                  Confirmar
-                </button>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       )}
     </section>
   );
 }
+

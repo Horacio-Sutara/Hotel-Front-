@@ -7,6 +7,18 @@ export default function UsuariosAdmin() {
   const [mostrarInactivos, setMostrarInactivos] = useState(false);
   const [usuarioSeleccionado, setUsuarioSeleccionado] = useState(null);
   const [mostrarModal, setMostrarModal] = useState(false);
+  const [mostrarCrear, setMostrarCrear] = useState(false);
+  const [nuevoUsuario, setNuevoUsuario] = useState({
+    nombre: "",
+    apellido: "",
+    pais: "",
+    correo: "",
+    numero_documento: "",
+    telefono: "",
+    contraseña: "",
+    confirmar: "",
+    rol: "CLIENTE",
+  });
   const [mensaje, setMensaje] = useState("");
   const [bloqueoClick, setBloqueoClick] = useState(false);
 
@@ -36,13 +48,13 @@ export default function UsuariosAdmin() {
     obtenerUsuarios();
   }, [mostrarInactivos]);
 
-  // 🔹 Editar datos del usuario
+  // 🔹 Editar usuario
   const editarUsuario = (usuario) => {
     setUsuarioSeleccionado({ ...usuario });
     setMostrarModal(true);
   };
 
-  // 🔹 Actualizar datos
+  // 🔹 Actualizar usuario existente
   const actualizarUsuario = async (e) => {
     e.preventDefault();
     if (bloqueoClick) return;
@@ -76,15 +88,89 @@ export default function UsuariosAdmin() {
       } else {
         setMensaje(data.error || "Error al actualizar usuario");
       }
-    } catch (err) {
-      console.error("Error:", err);
+    } catch {
       setMensaje("Error en la conexión con la API");
     } finally {
       setTimeout(() => setBloqueoClick(false), 1200);
     }
   };
 
-  // 🔹 Cambiar estado activo/inactivo
+  // 🔹 Crear nuevo usuario
+  const crearUsuario = async (e) => {
+    e.preventDefault();
+    if (bloqueoClick) return;
+    setBloqueoClick(true);
+    setMensaje("");
+
+    const {
+      nombre,
+      apellido,
+      pais,
+      correo,
+      numero_documento,
+      contraseña,
+      confirmar,
+      telefono,
+      rol,
+    } = nuevoUsuario;
+
+    if (
+      !nombre ||
+      !apellido ||
+      !pais ||
+      !correo ||
+      !numero_documento ||
+      !contraseña ||
+      !confirmar
+    ) {
+      setMensaje("Todos los campos obligatorios deben completarse");
+      setBloqueoClick(false);
+      return;
+    }
+
+    if (contraseña !== confirmar) {
+      setMensaje("Las contraseñas no coinciden");
+      setBloqueoClick(false);
+      return;
+    }
+
+    const userData = {
+      id_admin: adminId,
+      nombre,
+      apellido,
+      correo,
+      contraseña,
+      tipo_documento: "DNI",
+      numero_documento,
+      pais_emision: pais,
+      telefono: telefono || "",
+      rol,
+    };
+
+    try {
+      const response = await fetch("http://127.0.0.1:5000/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(userData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMensaje("Usuario creado con éxito");
+        setMostrarCrear(false);
+        obtenerUsuarios();
+      } else {
+        setMensaje(data.error || "Error al crear usuario");
+      }
+    } catch {
+      setMensaje("Error en la conexión con la API");
+    } finally {
+      setBloqueoClick(false);
+    }
+  };
+
+  // 🔹 Cambiar activo/inactivo
   const cambiarActivo = async (usuario) => {
     if (usuario.id === adminId) {
       setMensaje("No puedes desactivar tu propio usuario administrador");
@@ -92,57 +178,48 @@ export default function UsuariosAdmin() {
     }
 
     try {
-      if (usuario.activo) {
-        // 🔸 Dar de baja (DELETE)
-        const resp = await fetch(
-          `http://127.0.0.1:5000/api/users/${usuario.id}`,
-          {
-            method: "DELETE",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id_admin: adminId }),
-          }
-        );
-        const data = await resp.json();
-        if (resp.ok) {
-          setMensaje("Usuario dado de baja correctamente");
-          obtenerUsuarios();
-        } else {
-          setMensaje(data.error || "Error al dar de baja al usuario");
+      const method = usuario.activo ? "DELETE" : "PUT";
+      const body = usuario.activo
+        ? { id_admin: adminId }
+        : {
+            id_admin: adminId,
+            nombre: usuario.nombre,
+            apellido: usuario.apellido,
+            correo: usuario.correo,
+            telefono: usuario.telefono,
+            pais_emision: usuario.pais_emision,
+            rol: usuario.rol,
+            contraseña: usuario.contraseña,
+            activo: true,
+          };
+
+      const resp = await fetch(
+        `http://127.0.0.1:5000/api/users/${usuario.id}`,
+        {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
         }
+      );
+
+      const data = await resp.json();
+
+      if (resp.ok) {
+        setMensaje(
+          usuario.activo
+            ? "Usuario dado de baja correctamente"
+            : "Usuario reactivado correctamente"
+        );
+        obtenerUsuarios();
       } else {
-        // 🔹 Reactivar (PUT)
-        const resp = await fetch(
-          `http://127.0.0.1:5000/api/users/${usuario.id}`,
-          {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              id_admin: adminId,
-              nombre: usuario.nombre,
-              apellido: usuario.apellido,
-              correo: usuario.correo,
-              telefono: usuario.telefono,
-              pais_emision: usuario.pais_emision,
-              rol: usuario.rol,
-              contraseña: usuario.contraseña,
-              activo: true,
-            }),
-          }
-        );
-        const data = await resp.json();
-        if (resp.ok) {
-          setMensaje("Usuario reactivado correctamente");
-          obtenerUsuarios();
-        } else {
-          setMensaje(data.error || "Error al reactivar usuario");
-        }
+        setMensaje(data.error || "Error al cambiar estado del usuario");
       }
-    } catch (err) {
-      console.error("Error al cambiar estado del usuario:", err);
+    } catch {
       setMensaje("Error en la conexión con la API");
     }
   };
 
+  // 🔹 Render tabla
   const renderTabla = (titulo, lista) => (
     <div className="mb-8">
       <h3 className="text-xl font-semibold mb-2 text-blue-400">{titulo}</h3>
@@ -164,15 +241,9 @@ export default function UsuariosAdmin() {
               lista.map((u) => (
                 <tr key={u.id} className="hover:bg-gray-800 transition">
                   <td className="border border-gray-700 px-3 py-2">{u.id}</td>
-                  <td className="border border-gray-700 px-3 py-2">
-                    {u.nombre}
-                  </td>
-                  <td className="border border-gray-700 px-3 py-2">
-                    {u.apellido}
-                  </td>
-                  <td className="border border-gray-700 px-3 py-2">
-                    {u.correo}
-                  </td>
+                  <td className="border border-gray-700 px-3 py-2">{u.nombre}</td>
+                  <td className="border border-gray-700 px-3 py-2">{u.apellido}</td>
+                  <td className="border border-gray-700 px-3 py-2">{u.correo}</td>
                   <td className="border border-gray-700 px-3 py-2">{u.rol}</td>
                   <td className="border border-gray-700 px-3 py-2 text-center">
                     <input
@@ -216,16 +287,7 @@ export default function UsuariosAdmin() {
       </h2>
 
       {mensaje && (
-        <p
-          className={`mb-4 text-center font-semibold ${
-            mensaje.toLowerCase().includes("éxito") ||
-            mensaje.toLowerCase().includes("correctamente")
-              ? "text-green-400"
-              : mensaje.toLowerCase().includes("error")
-              ? "text-red-400"
-              : "text-yellow-400"
-          }`}
-        >
+        <p className="mb-4 text-center font-semibold text-yellow-400">
           {mensaje}
         </p>
       )}
@@ -238,107 +300,125 @@ export default function UsuariosAdmin() {
           {mostrarInactivos ? "Mostrar Activos" : "Mostrar Inactivos"}
         </button>
 
-        <button
-          onClick={obtenerUsuarios}
-          className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded"
-        >
-          Actualizar Listas
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={obtenerUsuarios}
+            className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded"
+          >
+            Actualizar Listas
+          </button>
+          <button
+            onClick={() => setMostrarCrear(true)}
+            className="bg-green-700 hover:bg-green-600 px-4 py-2 rounded"
+          >
+            Crear Usuario
+          </button>
+        </div>
       </div>
 
       {renderTabla("Clientes", clientes)}
       {renderTabla("Operadores", operadores)}
       {renderTabla("Administradores", administradores)}
 
-      {mostrarModal && usuarioSeleccionado && (
+      {/* 🔹 Modal Crear Usuario */}
+      {mostrarCrear && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center">
-          <div className="bg-gray-900 text-white rounded-lg p-6 w-[420px] shadow-lg border border-gray-700">
+          <div className="bg-gray-900 text-white rounded-lg p-6 w-[420px] border border-gray-700">
             <h3 className="text-xl font-semibold mb-4 text-center">
-              Editar Usuario
+              Crear Nuevo Usuario
             </h3>
-            <form onSubmit={actualizarUsuario} className="space-y-3">
+            <form onSubmit={crearUsuario} className="space-y-3">
               <input
                 type="text"
                 placeholder="Nombre"
-                value={usuarioSeleccionado.nombre}
+                value={nuevoUsuario.nombre}
                 onChange={(e) =>
-                  setUsuarioSeleccionado({
-                    ...usuarioSeleccionado,
-                    nombre: e.target.value,
-                  })
+                  setNuevoUsuario({ ...nuevoUsuario, nombre: e.target.value })
                 }
-                className="w-full bg-gray-800 p-2 rounded border border-gray-600"
+                className="w-full bg-gray-800 p-2 rounded"
               />
               <input
                 type="text"
                 placeholder="Apellido"
-                value={usuarioSeleccionado.apellido}
+                value={nuevoUsuario.apellido}
                 onChange={(e) =>
-                  setUsuarioSeleccionado({
-                    ...usuarioSeleccionado,
-                    apellido: e.target.value,
-                  })
+                  setNuevoUsuario({ ...nuevoUsuario, apellido: e.target.value })
                 }
-                className="w-full bg-gray-800 p-2 rounded border border-gray-600"
-              />
-              <input
-                type="email"
-                placeholder="Correo"
-                value={usuarioSeleccionado.correo}
-                onChange={(e) =>
-                  setUsuarioSeleccionado({
-                    ...usuarioSeleccionado,
-                    correo: e.target.value,
-                  })
-                }
-                className="w-full bg-gray-800 p-2 rounded border border-gray-600"
-              />
-              <input
-                type="text"
-                placeholder="Teléfono"
-                value={usuarioSeleccionado.telefono || ""}
-                onChange={(e) =>
-                  setUsuarioSeleccionado({
-                    ...usuarioSeleccionado,
-                    telefono: e.target.value,
-                  })
-                }
-                className="w-full bg-gray-800 p-2 rounded border border-gray-600"
+                className="w-full bg-gray-800 p-2 rounded"
               />
               <input
                 type="text"
                 placeholder="País"
-                value={usuarioSeleccionado.pais_emision || ""}
+                value={nuevoUsuario.pais}
                 onChange={(e) =>
-                  setUsuarioSeleccionado({
-                    ...usuarioSeleccionado,
-                    pais_emision: e.target.value,
+                  setNuevoUsuario({ ...nuevoUsuario, pais: e.target.value })
+                }
+                className="w-full bg-gray-800 p-2 rounded"
+              />
+              <input
+                type="email"
+                placeholder="Correo"
+                value={nuevoUsuario.correo}
+                onChange={(e) =>
+                  setNuevoUsuario({ ...nuevoUsuario, correo: e.target.value })
+                }
+                className="w-full bg-gray-800 p-2 rounded"
+              />
+              <input
+                type="text"
+                placeholder="DNI"
+                value={nuevoUsuario.numero_documento}
+                onChange={(e) =>
+                  setNuevoUsuario({
+                    ...nuevoUsuario,
+                    numero_documento: e.target.value,
                   })
                 }
-                className="w-full bg-gray-800 p-2 rounded border border-gray-600"
+                className="w-full bg-gray-800 p-2 rounded"
+              />
+              <input
+                type="text"
+                placeholder="Teléfono (opcional)"
+                value={nuevoUsuario.telefono}
+                onChange={(e) =>
+                  setNuevoUsuario({
+                    ...nuevoUsuario,
+                    telefono: e.target.value,
+                  })
+                }
+                className="w-full bg-gray-800 p-2 rounded"
               />
               <input
                 type="password"
                 placeholder="Contraseña"
-                value={usuarioSeleccionado.contraseña || ""}
+                value={nuevoUsuario.contraseña}
                 onChange={(e) =>
-                  setUsuarioSeleccionado({
-                    ...usuarioSeleccionado,
+                  setNuevoUsuario({
+                    ...nuevoUsuario,
                     contraseña: e.target.value,
                   })
                 }
-                className="w-full bg-gray-800 p-2 rounded border border-gray-600"
+                className="w-full bg-gray-800 p-2 rounded"
+              />
+              <input
+                type="password"
+                placeholder="Confirmar contraseña"
+                value={nuevoUsuario.confirmar}
+                onChange={(e) =>
+                  setNuevoUsuario({
+                    ...nuevoUsuario,
+                    confirmar: e.target.value,
+                  })
+                }
+                className="w-full bg-gray-800 p-2 rounded"
               />
 
               <select
-                value={usuarioSeleccionado.rol}
+                value={nuevoUsuario.rol}
                 onChange={(e) =>
-                  setUsuarioSeleccionado({
-                    ...usuarioSeleccionado,
-                    rol: e.target.value,
-                  })
+                  setNuevoUsuario({ ...nuevoUsuario, rol: e.target.value })
                 }
-                className="w-full bg-gray-800 p-2 rounded border border-gray-600"
+                className="w-full bg-gray-800 p-2 rounded"
               >
                 <option value="CLIENTE">Cliente</option>
                 <option value="OPERADOR">Operador</option>
@@ -350,11 +430,11 @@ export default function UsuariosAdmin() {
                   type="submit"
                   className="bg-green-700 px-4 py-2 rounded hover:bg-green-600"
                 >
-                  Guardar Cambios
+                  Crear
                 </button>
                 <button
                   type="button"
-                  onClick={() => setMostrarModal(false)}
+                  onClick={() => setMostrarCrear(false)}
                   className="bg-red-700 px-4 py-2 rounded hover:bg-red-600"
                 >
                   Cancelar
