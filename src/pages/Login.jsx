@@ -75,6 +75,7 @@ export default function Login() {
 
 try {
   const userData = {
+    nombre: form.nombre,
     correo: form.email,
     contraseña: form.contraseña,
   };
@@ -102,6 +103,10 @@ try {
     "usuario",
     JSON.stringify({
       nombre: usuario.nombre,
+      apellido: usuario.apellido,
+      numero_documento: usuario.numero_documento,
+      telefono: usuario.telefono,
+      pais_emision: usuario.pais_emision,
       email: usuario.correo,
       tipo: usuario.rol,
       id: usuario.id,

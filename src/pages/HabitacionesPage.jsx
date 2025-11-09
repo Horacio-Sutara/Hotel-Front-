@@ -351,7 +351,10 @@ export default function Habitaciones() {
                 <h3 className="text-xl font-semibold mb-2 text-white">Datos del Usuario</h3>
                 <p><strong>Nombre:</strong> {usuario.nombre} {usuario.apellido}</p>
                 <p><strong>DNI:</strong> {usuario.numero_documento}</p>
-                <p><strong>Teléfono:</strong> {usuario.telefono}</p>
+                {usuario.telefono && (
+                  <p><strong>Teléfono:</strong> {usuario.telefono}</p>
+                )}
+                
                 <p><strong>País:</strong> {usuario.pais_emision}</p>
                 <p><strong>Email:</strong> {usuario.email}</p>
               </div>
