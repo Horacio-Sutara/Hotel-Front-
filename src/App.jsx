@@ -8,6 +8,7 @@ import LoginPage from "./pages/Login";
 import RegisterPage from "./pages/Registro";
 import PanelOperador from "./operador/PanelOperador";
 import PanelAdmin from "./admin/PanelAdmin"; // 🔹 Importamos PanelAdmin
+import MisReservas from "./pages/MisReservas"; 
 
 function App() {
   const location = useLocation();
@@ -34,6 +35,7 @@ function App() {
 
           {/* 🔹 Panel del administrador */}
           <Route path="/admin/*" element={<PanelAdmin />} />
+          <Route path="/mis-reservas" element={<MisReservas />} />
         </Routes>
       </div>
     </div>

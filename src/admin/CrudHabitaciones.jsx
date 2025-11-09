@@ -14,6 +14,9 @@ import suite3 from "../assets/suite/foto3.png";
 
 export default function CrudHabitaciones() {
   const [habitaciones, setHabitaciones] = useState([]);
+  const [habitacionesCerradas, setHabitacionesCerradas] = useState([]);
+  const [mostrarCerradas, setMostrarCerradas] = useState(false);
+
   const [nueva, setNueva] = useState({
     nombre: "",
     tipo: "",
@@ -49,53 +52,37 @@ export default function CrudHabitaciones() {
     }
   };
 
-  // 🔹 Cargar habitaciones de la API + predeterminadas
+  // 🔹 Obtener habitaciones activas
+  const fetchHabitacionesActivas = async () => {
+    try {
+      const res = await fetch("http://127.0.0.1:5000/api/habitaciones/activas");
+      const data = await res.json();
+      setHabitaciones(data);
+    } catch (error) {
+      console.error("Error al obtener habitaciones activas:", error);
+    }
+  };
+
+  // 🔹 Obtener habitaciones cerradas
+  const fetchHabitacionesCerradas = async () => {
+    try {
+      const res = await fetch("http://127.0.0.1:5000/api/habitaciones");
+      const data = await res.json();
+      const cerradas = data.filter((h) => h.estado === "CERRADA");
+      setHabitacionesCerradas(cerradas);
+    } catch (error) {
+      console.error("Error al obtener habitaciones cerradas:", error);
+    }
+  };
+
+  // 🔹 Alternar mostrar u ocultar lista de cerradas
+  const handleMostrarCerradas = () => {
+    if (!mostrarCerradas) fetchHabitacionesCerradas();
+    setMostrarCerradas(!mostrarCerradas);
+  };
+
   useEffect(() => {
-    const fetchHabitaciones = async () => {
-      try {
-        const res = await fetch("http://127.0.0.1:5000/api/habitaciones");
-        const data = await res.json();
-
-        const predeterminadas = [
-          {
-            id: "local-1",
-            nombre: "Habitación Estándar",
-            tipo: "ESTANDAR",
-            descripcion: "Habitación cómoda con servicios esenciales.",
-            precio: 150000,
-            capacidad: 2,
-            estado: "DISPONIBLE",
-            imagen_url: obtenerImagenLocal("ESTANDAR"),
-          },
-          {
-            id: "local-2",
-            nombre: "Habitación Deluxe",
-            tipo: "DELUXE",
-            descripcion: "Espaciosa y elegante, ideal para una estadía superior.",
-            precio: 230000,
-            capacidad: 3,
-            estado: "DISPONIBLE",
-            imagen_url: obtenerImagenLocal("DELUXE"),
-          },
-          {
-            id: "local-3",
-            nombre: "Suite Ejecutiva",
-            tipo: "SUITE",
-            descripcion: "Suite de lujo con amplias comodidades y vista panorámica.",
-            precio: 350000,
-            capacidad: 4,
-            estado: "DISPONIBLE",
-            imagen_url: obtenerImagenLocal("SUITE"),
-          },
-        ];
-
-        setHabitaciones([...predeterminadas, ...data]);
-      } catch (error) {
-        console.error("Error al cargar habitaciones:", error);
-      }
-    };
-
-    fetchHabitaciones();
+    fetchHabitacionesActivas();
   }, []);
 
   // 🔹 Agregar nueva habitación
@@ -128,10 +115,7 @@ export default function CrudHabitaciones() {
       const result = await response.json();
 
       if (response.ok) {
-        setHabitaciones([
-          ...habitaciones,
-          { ...habitacionAPI, id: Date.now(), estado: "DISPONIBLE" },
-        ]);
+        fetchHabitacionesActivas();
         setNueva({
           nombre: "",
           tipo: "",
@@ -149,7 +133,7 @@ export default function CrudHabitaciones() {
     }
   };
 
-  // 🔹 Guardar edición (evita error 415)
+  // 🔹 Guardar edición
   const guardarEdicion = async (id) => {
     try {
       const response = await fetch(
@@ -157,18 +141,14 @@ export default function CrudHabitaciones() {
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(editData || {}), //  aseguramos que haya cuerpo JSON
+          body: JSON.stringify(editData || {}),
         }
       );
-
-      console.log(editData);
 
       const result = await response.json();
 
       if (response.ok) {
-        setHabitaciones(
-          habitaciones.map((h) => (h.id === id ? { ...h, ...editData } : h))
-        );
+        fetchHabitacionesActivas();
         setEditando(null);
       } else {
         alert(result.error || "Error al editar habitación");
@@ -179,41 +159,59 @@ export default function CrudHabitaciones() {
     }
   };
 
-  // 🔹 Eliminar habitación (evita error 415)
-  const eliminarHabitacion = async (id) => {
-    if (!window.confirm("¿Seguro que deseas eliminar esta habitación?")) return;
-
+  // 🔹 Cerrar habitación
+  const handleCerrarHabitacion = async (idHabitacion) => {
     try {
-      const response = await fetch(
-        `http://127.0.0.1:5000/api/habitaciones/${id}?admin_id=${ADMIN_ID}`,
+      const res = await fetch(
+        `http://127.0.0.1:5000/api/habitaciones/${idHabitacion}?admin_id=${ADMIN_ID}`,
         {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({}), //  cuerpo vacío evita error 415
+          body: JSON.stringify({}),
         }
       );
 
-      const result = await response.json();
-
-      if (response.ok) {
-        setHabitaciones(habitaciones.filter((h) => h.id !== id));
+      const data = await res.json();
+      if (res.ok) {
+        alert("Habitación cerrada correctamente");
+        fetchHabitacionesActivas();
       } else {
-        alert(result.error || "Error al eliminar habitación");
+        alert("Error al cerrar: " + data.error);
       }
     } catch (error) {
-      console.error("Error al eliminar habitación:", error);
-      alert("Error al conectar con la API");
+      console.error("Error al cerrar habitación:", error);
     }
   };
 
-  // 🔹 Separar habitaciones cerradas
-  const cerradas = habitaciones.filter((h) => h.estado === "CERRADA");
-  const disponibles = habitaciones.filter((h) => h.estado !== "CERRADA");
+  // 🔹 Restaurar habitación cerrada → disponible
+  const handleRestaurarHabitacion = async (idHabitacion) => {
+    try {
+      const res = await fetch(
+        `http://127.0.0.1:5000/api/habitaciones/${idHabitacion}?admin_id=${ADMIN_ID}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ estado: "DISPONIBLE" }),
+        }
+      );
+
+      const data = await res.json();
+      if (res.ok) {
+        alert("Habitación restaurada correctamente");
+        fetchHabitacionesCerradas();
+        fetchHabitacionesActivas();
+      } else {
+        alert("Error al restaurar: " + data.error);
+      }
+    } catch (error) {
+      console.error("Error al restaurar habitación:", error);
+    }
+  };
 
   return (
-    <div className="flex flex-col md:flex-row gap-6">
-      {/* Formulario */}
-      <div className="md:w-1/2 bg-zinc-900 p-4 rounded-lg shadow text-white flex flex-col gap-4">
+    <div className="p-6">
+      {/* 🔹 Formulario */}
+      <div className="bg-zinc-900 p-4 rounded-lg text-white mb-6">
         <h2 className="text-2xl font-semibold mb-4">Agregar nueva habitación</h2>
 
         <input
@@ -221,13 +219,13 @@ export default function CrudHabitaciones() {
           placeholder="Nombre"
           value={nueva.nombre}
           onChange={(e) => setNueva({ ...nueva, nombre: e.target.value })}
-          className="bg-zinc-800 px-3 py-2 rounded w-full border border-zinc-700"
+          className="bg-zinc-800 px-3 py-2 rounded w-full mb-2 border border-zinc-700"
         />
 
         <select
           value={nueva.tipo}
           onChange={(e) => setNueva({ ...nueva, tipo: e.target.value })}
-          className="bg-zinc-800 px-3 py-2 rounded w-full border border-zinc-700"
+          className="bg-zinc-800 px-3 py-2 rounded w-full mb-2 border border-zinc-700"
         >
           <option value="">Seleccionar tipo</option>
           <option value="ESTANDAR">Estándar</option>
@@ -239,7 +237,7 @@ export default function CrudHabitaciones() {
           placeholder="Descripción"
           value={nueva.descripcion}
           onChange={(e) => setNueva({ ...nueva, descripcion: e.target.value })}
-          className="bg-zinc-800 px-3 py-2 rounded w-full border border-zinc-700"
+          className="bg-zinc-800 px-3 py-2 rounded w-full mb-2 border border-zinc-700"
         />
 
         <input
@@ -247,7 +245,7 @@ export default function CrudHabitaciones() {
           placeholder="Precio"
           value={nueva.precio}
           onChange={(e) => setNueva({ ...nueva, precio: e.target.value })}
-          className="bg-zinc-800 px-3 py-2 rounded w-full border border-zinc-700"
+          className="bg-zinc-800 px-3 py-2 rounded w-full mb-2 border border-zinc-700"
         />
 
         <input
@@ -255,7 +253,7 @@ export default function CrudHabitaciones() {
           placeholder="Capacidad"
           value={nueva.capacidad}
           onChange={(e) => setNueva({ ...nueva, capacidad: e.target.value })}
-          className="bg-zinc-800 px-3 py-2 rounded w-full border border-zinc-700"
+          className="bg-zinc-800 px-3 py-2 rounded w-full mb-2 border border-zinc-700"
         />
 
         <input
@@ -263,7 +261,7 @@ export default function CrudHabitaciones() {
           placeholder="URL Imagen"
           value={nueva.imagen_url}
           onChange={(e) => setNueva({ ...nueva, imagen_url: e.target.value })}
-          className="bg-zinc-800 px-3 py-2 rounded w-full border border-zinc-700"
+          className="bg-zinc-800 px-3 py-2 rounded w-full mb-2 border border-zinc-700"
         />
 
         <button
@@ -274,96 +272,103 @@ export default function CrudHabitaciones() {
         </button>
       </div>
 
-      {/* Listado de habitaciones */}
-      <div className="md:w-1/2 flex flex-col gap-6">
-        {/* Disponibles / Ocupadas */}
-        <div className="bg-zinc-900 p-4 rounded-lg shadow text-white">
-          <h2 className="text-2xl font-semibold mb-4">Habitaciones activas</h2>
-          <ul>
-            {disponibles.map((h) => (
-              <li
-                key={h.id}
-                className="flex justify-between items-center bg-zinc-800 p-2 rounded mb-2"
-              >
-                {editando === h.id ? (
-                  <div className="flex flex-col gap-1 w-full">
-                    <input
-                      type="text"
-                      value={editData.nombre || ""}
-                      onChange={(e) => setEditData({ ...editData, nombre: e.target.value })}
-                      className="bg-zinc-700 px-2 py-1 rounded"
-                    />
-                    <input
-                      type="number"
-                      value={editData.precio || ""}
-                      onChange={(e) => setEditData({ ...editData, precio: e.target.value })}
-                      className="bg-zinc-700 px-2 py-1 rounded"
-                    />
-                    <select
-                      value={editData.estado || "DISPONIBLE"}
-                      onChange={(e) => setEditData({ ...editData, estado: e.target.value })}
-                      className="bg-zinc-700 px-2 py-1 rounded"
+      {/* 🔹 Habitaciones activas */}
+      <div className="bg-zinc-900 p-4 rounded-lg text-white mb-6">
+        <h2 className="text-2xl font-semibold mb-4">Habitaciones activas</h2>
+        <ul>
+          {habitaciones.map((h) => (
+            <li
+              key={h.id}
+              className="flex justify-between items-center bg-zinc-800 p-2 rounded mb-2"
+            >
+              {editando === h.id ? (
+                <div className="flex flex-col gap-1 w-full">
+                  <input
+                    type="text"
+                    value={editData.nombre || ""}
+                    onChange={(e) => setEditData({ ...editData, nombre: e.target.value })}
+                    className="bg-zinc-700 px-2 py-1 rounded"
+                  />
+                  <input
+                    type="number"
+                    value={editData.precio || ""}
+                    onChange={(e) => setEditData({ ...editData, precio: e.target.value })}
+                    className="bg-zinc-700 px-2 py-1 rounded"
+                  />
+                  <select
+                    value={editData.estado || "DISPONIBLE"}
+                    onChange={(e) => setEditData({ ...editData, estado: e.target.value })}
+                    className="bg-zinc-700 px-2 py-1 rounded"
+                  >
+                    <option value="DISPONIBLE">Disponible</option>
+                    <option value="OCUPADA">Ocupada</option>
+                    <option value="CERRADA">Cerrada</option>
+                  </select>
+                  <div className="flex gap-2 mt-1">
+                    <button
+                      onClick={() => guardarEdicion(h.id)}
+                      className="bg-green-600 px-2 py-1 rounded"
                     >
-                      <option value="DISPONIBLE">Disponible</option>
-                      <option value="OCUPADA">Ocupada</option>
-                      <option value="CERRADA">Cerrada</option>
-                    </select>
-                    <div className="flex gap-2 mt-1">
-                      <button
-                        onClick={() => guardarEdicion(h.id)}
-                        className="bg-green-600 px-2 py-1 rounded"
-                      >
-                        <Check size={14} />
-                      </button>
-                      <button
-                        onClick={() => setEditando(null)}
-                        className="bg-red-600 px-2 py-1 rounded"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
+                      <Check size={14} />
+                    </button>
+                    <button
+                      onClick={() => setEditando(null)}
+                      className="bg-red-600 px-2 py-1 rounded"
+                    >
+                      <X size={14} />
+                    </button>
                   </div>
-                ) : (
-                  <>
-                    <div>
-                      <p className="font-semibold">{h.nombre}</p>
-                      <p>Tipo: {h.tipo}</p>
-                      <p>Estado: {h.estado}</p>
-                      <p>Precio: ${h.precio}</p>
-                      <p>Capacidad: {h.capacidad}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => {
-                          setEditando(h.id);
-                          setEditData(h);
-                        }}
-                        className="text-blue-400 hover:text-blue-500"
-                      >
-                        <Edit3 size={16} />
-                      </button>
-                      <button
-                        onClick={() => eliminarHabitacion(h.id)}
-                        className="text-red-500 hover:text-red-600"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </>
-                )}
-              </li>
-            ))}
-          </ul>
-        </div>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <p className="font-semibold">{h.nombre}</p>
+                    <p>Tipo: {h.tipo}</p>
+                    <p>Estado: {h.estado}</p>
+                    <p>Precio: ${h.precio}</p>
+                    <p>Capacidad: {h.capacidad}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setEditando(h.id);
+                        setEditData(h);
+                      }}
+                      className="text-blue-400 hover:text-blue-500"
+                    >
+                      <Edit3 size={16} />
+                    </button>
+                    <button
+                      onClick={() => handleCerrarHabitacion(h.id)}
+                      className="text-red-500 hover:text-red-600"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
 
-        {/* Cerradas */}
-        <div className="bg-red-900 p-4 rounded-lg shadow text-white">
+      {/* 🔹 Botón para mostrar/ocultar cerradas */}
+      <button
+        onClick={handleMostrarCerradas}
+        className="mb-4 bg-gray-800 hover:bg-gray-600 text-white px-4 py-2 rounded-md transition"
+      >
+        {mostrarCerradas ? "Ocultar habitaciones cerradas" : "Mostrar habitaciones cerradas"}
+      </button>
+
+      {/* 🔹 Habitaciones cerradas */}
+      {mostrarCerradas && (
+        <div className="bg-red-900 p-4 rounded-lg text-white">
           <h2 className="text-2xl font-semibold mb-4">Habitaciones cerradas</h2>
-          {cerradas.length === 0 ? (
+          {habitacionesCerradas.length === 0 ? (
             <p className="text-zinc-300">No hay habitaciones cerradas.</p>
           ) : (
             <ul>
-              {cerradas.map((h) => (
+              {habitacionesCerradas.map((h) => (
                 <li
                   key={h.id}
                   className="flex justify-between items-center bg-zinc-800 p-2 rounded mb-2"
@@ -374,17 +379,17 @@ export default function CrudHabitaciones() {
                     <p>Precio: ${h.precio}</p>
                   </div>
                   <button
-                    onClick={() => eliminarHabitacion(h.id)}
-                    className="text-red-400 hover:text-red-600"
+                    onClick={() => handleRestaurarHabitacion(h.id)}
+                    className="bg-green-600 hover:bg-green-500 text-white px-3 py-1 rounded-md"
                   >
-                    <Trash2 size={16} />
+                    Restaurar
                   </button>
                 </li>
               ))}
             </ul>
           )}
         </div>
-      </div>
+      )}
     </div>
   );
 }

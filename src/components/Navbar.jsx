@@ -55,6 +55,18 @@ const Navbar = () => {
             </NavLink>
           </li>
 
+          {/* Botón de Mis Reservas (solo si hay usuario) */}
+          {user && (
+            <li>
+              <button
+                onClick={() => navigate("/mis-reservas")}
+                className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 py-2 rounded-lg transition-all"
+              >
+                Mis Reservas
+              </button>
+            </li>
+          )}
+
           {/* Si no hay usuario, mostrar botón de inicio de sesión */}
           {!user && (
             <li>

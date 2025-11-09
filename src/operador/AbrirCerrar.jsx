@@ -25,7 +25,7 @@ export default function AbrirCerrar() {
     fetchHabitaciones();
   }, []);
 
-  // 🔹 Cambiar estado de una habitación
+  // 🔹 Cambiar estado de una habitación (para mantenimiento o disponibilidad)
   const cambiarEstado = async (id, nuevoEstado) => {
     try {
       const res = await fetch(
@@ -48,6 +48,38 @@ export default function AbrirCerrar() {
     } catch (error) {
       console.error("Error al conectar con la API:", error);
     }
+  };
+
+  // 🔹 Nueva función: liberar una reserva cuando cumplió su tiempo
+  const liberarReserva = async (idHabitacion) => {
+    try {
+      const res = await fetch(
+        `http://localhost:5000/api/reservas/liberar/${idHabitacion}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id_operador: operadorId }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (res.ok) {
+        console.log("✅ Reserva liberada correctamente:", data.mensaje);
+        fetchHabitaciones();
+      } else {
+        console.error("❌ Error al liberar la reserva:", data.error);
+      }
+    } catch (error) {
+      console.error("Error al conectar con la API de reservas:", error);
+    }
+  };
+
+  // 🔹 Nueva función toggle mantenimiento
+  const toggleMantenimiento = (hab) => {
+    const nuevoEstado =
+      hab.estado === "MANTENIMIENTO" ? "DISPONIBLE" : "MANTENIMIENTO";
+    cambiarEstado(hab.id, nuevoEstado);
   };
 
   if (!habitaciones || habitaciones.length === 0) {
@@ -91,10 +123,10 @@ export default function AbrirCerrar() {
               <td className="flex justify-center gap-3 py-2">
                 {/* 🔹 Botón Liberar */}
                 <button
-                  onClick={() => cambiarEstado(hab.id, "DISPONIBLE")}
-                  disabled={hab.estado === "DISPONIBLE"}
+                  onClick={() => liberarReserva(hab.id)}
+                  disabled={hab.estado !== "OCUPADA"}
                   className={`px-3 py-1 rounded text-white ${
-                    hab.estado === "DISPONIBLE"
+                    hab.estado !== "OCUPADA"
                       ? "bg-green-800 opacity-60 cursor-not-allowed"
                       : "bg-green-600 hover:bg-green-700"
                   }`}
@@ -102,17 +134,18 @@ export default function AbrirCerrar() {
                   Liberar
                 </button>
 
-                {/* 🔹 Botón Mantenimiento */}
+                {/* 🔹 Botón Mantenimiento (toggle) */}
                 <button
-                  onClick={() => cambiarEstado(hab.id, "MANTENIMIENTO")}
-                  disabled={hab.estado === "MANTENIMIENTO"}
+                  onClick={() => toggleMantenimiento(hab)}
                   className={`px-3 py-1 rounded text-black ${
                     hab.estado === "MANTENIMIENTO"
-                      ? "bg-yellow-400 opacity-60 cursor-not-allowed"
+                      ? "bg-yellow-400 hover:bg-yellow-300"
                       : "bg-yellow-300 hover:bg-yellow-400"
                   }`}
                 >
-                  Mantenimiento
+                  {hab.estado === "MANTENIMIENTO"
+                    ? "Quitar mantenimiento"
+                    : "Mantenimiento"}
                 </button>
               </td>
             </tr>

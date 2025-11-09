@@ -11,13 +11,15 @@ export default function Habitaciones() {
   const [tipo, setTipo] = useState("estandar");
   const [mostrarCalendario, setMostrarCalendario] = useState(false);
   const [mostrarToast, setMostrarToast] = useState(false);
+  const [mensajeCapacidad, setMensajeCapacidad] = useState("");
+  const [excedeCapacidad, setExcedeCapacidad] = useState(false);
   const [reserva, setReserva] = useState({
     fechas: [new Date(), new Date()],
     adultos: 1,
     ninos: 0,
   });
   const [paso, setPaso] = useState(0);
-  const [usuario, setUsuario] = useState(null); // se llenará con los datos del login
+  const [usuario, setUsuario] = useState(null);
   const [pago, setPago] = useState({
     tarjetaRaw: "",
     tarjetaFormateada: "",
@@ -28,6 +30,10 @@ export default function Habitaciones() {
     expiryValid: false,
     cvvValid: false,
   });
+  const [enviandoReserva, setEnviandoReserva] = useState(false);
+  const [diasOcupados, setDiasOcupados] = useState([]);
+
+
 
   // ---------- Obtener usuario logueado ----------
   useEffect(() => {
@@ -41,7 +47,7 @@ export default function Habitaciones() {
     }
   }, []);
 
-  const diasOcupados = ["2025-10-10", "2025-10-11", "2025-10-14", "2025-10-15"];
+  
   const pasosTexto = ["Revisar Reserva", "Método de Pago"];
 
   // ---------- Habitaciones predeterminadas ----------
@@ -81,12 +87,10 @@ export default function Habitaciones() {
         data.forEach((h) => {
           if (h.estado !== "DISPONIBLE") return;
           let imagen = habitacionEstandar;
-          const tipo = (h.tipo || h.nombre || "").toLowerCase();
-          if (tipo.includes("deluxe")) imagen = habitacionDeluxe;
-          else if (tipo.includes("suite")) imagen = habitacionSuite;
-          else if (tipo.includes("estándar") || tipo.includes("estandar"))
-            imagen = habitacionEstandar;
-
+          const tipoHab = (h.tipo || h.nombre || "").toLowerCase();
+          if (tipoHab.includes("deluxe")) imagen = habitacionDeluxe;
+          else if (tipoHab.includes("suite")) imagen = habitacionSuite;
+          else if (tipoHab.includes("estándar") || tipoHab.includes("estandar")) imagen = habitacionEstandar;
           nuevasHabitaciones[`api_${h.id}`] = {
             nombre: h.nombre,
             img: h.imagen_url || imagen,
@@ -109,22 +113,106 @@ export default function Habitaciones() {
     const fechaISO = date.toISOString().split("T")[0];
     return diasOcupados.includes(fechaISO)
       ? "bg-red-500 text-white rounded-full"
-      : "bg-green-600 text-white rounded-full";
+      : "";
   };
+
+  const fetchDiasOcupados = async (idHabitacion) => {
+  try {
+    const res = await fetch(`http://localhost:5000/api/reservas/fechas/${idHabitacion}`);
+    const data = await res.json();
+
+    // 🔹 Si tu backend devuelve una lista con fechas de entrada y salida
+    // ejemplo: [{fecha_entrada: "2025-11-10T14:00:00", fecha_salida: "2025-11-15T11:00:00"}]
+    const dias = [];
+
+    data.forEach((r) => {
+      const start = new Date(r.fecha_entrada);
+      const end = new Date(r.fecha_salida);
+      let current = new Date(start);
+
+      // Generamos todas las fechas entre entrada y salida
+      while (current <= end) {
+        dias.push(current.toISOString().split("T")[0]);
+        current.setDate(current.getDate() + 1);
+      }
+    });
+
+    setDiasOcupados(dias);
+  } catch (error) {
+    console.error("Error al obtener fechas ocupadas:", error);
+  }
+};
 
   // ---------- Métodos auxiliares ----------
-  const handleConsultarDisponibilidad = () => {
-    if (!usuario) {
-      setMostrarToast(true);
-      setTimeout(() => setMostrarToast(false), 3000);
-      return;
+const handleConsultarDisponibilidad = async () => {
+  if (!usuario) {
+    setMostrarToast(true);
+    setTimeout(() => setMostrarToast(false), 3000);
+    return;
+  }
+
+  // 🔹 Obtener ID de la habitación seleccionada
+  const idHabitacion =
+    tipo.startsWith("api_") ? parseInt(tipo.replace("api_", "")) : 1;
+
+  // 🔹 Traer los días ocupados desde la API
+  await fetchDiasOcupados(idHabitacion);
+
+  // 🔹 Mostrar calendario
+  setMostrarCalendario(true);
+};
+
+  // Validación de capacidad al cambiar adultos/niños
+  const handleCambioPersonas = (tipoCampo, valor) => {
+    const nuevoValor = Math.max(0, parseInt(valor) || 0);
+    const nuevaReserva = { ...reserva, [tipoCampo]: nuevoValor };
+    setReserva(nuevaReserva);
+    const totalPersonas = parseInt(nuevaReserva.adultos) + parseInt(nuevaReserva.ninos);
+    if (habitacion && totalPersonas > habitacion.capacidad) {
+      setMensajeCapacidad(`Se excede la capacidad máxima (${habitacion.capacidad} personas).`);
+      setExcedeCapacidad(true);
+    } else {
+      setMensajeCapacidad("");
+      setExcedeCapacidad(false);
     }
-    setMostrarCalendario(true);
   };
 
-  const handleConfirmarPago = () => {
-    if (!isPaymentReady()) return alert("Completa correctamente los datos de la tarjeta.");
-    alert("¡Reserva y pago confirmados!");
+const handleConfirmarPago = async () => {
+  if (!isPaymentReady()) return alert("Completa correctamente los datos de la tarjeta.");
+  if (enviandoReserva) return; // Evita doble clic
+
+  try {
+    setEnviandoReserva(true);
+
+    // Construir datos de reserva
+    const data = {
+      id_habitacion: parseInt(tipo.replace("api_", "")) || 1, // Si viene de la API usa su id
+      id_cliente: usuario?.id || 2, // Asegúrate que tu backend devuelve el id del usuario al loguear
+      fecha_entrada: new Date(reserva.fechas[0]).toISOString().split(".")[0],
+      fecha_salida: new Date(reserva.fechas[1]).toISOString().split(".")[0],
+      numero_huespedes: parseInt(reserva.adultos) + parseInt(reserva.ninos),
+    };
+
+    // Validación extra de capacidad
+    if (habitacion && data.numero_huespedes > habitacion.capacidad) {
+      alert(`Se excede la capacidad máxima (${habitacion.capacidad} personas).`);
+      setEnviandoReserva(false);
+      return;
+    }
+
+    const res = await fetch("http://localhost:5000/api/reservas", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+
+    if (!res.ok) throw new Error("Error al crear la reserva");
+    const respuesta = await res.json();
+
+    alert("Reserva y pago confirmados correctamente!");
+    console.log("Reserva creada:", respuesta);
+
+    // Reiniciar estados
     setPaso(0);
     setPago({
       tarjetaRaw: "",
@@ -136,7 +224,14 @@ export default function Habitaciones() {
       expiryValid: false,
       cvvValid: false,
     });
-  };
+  } catch (err) {
+    console.error("Error al confirmar pago:", err);
+    alert("Hubo un problema al confirmar la reserva. Intenta nuevamente.");
+  } finally {
+    setEnviandoReserva(false);
+  }
+};
+
 
   // ---------- Validaciones tarjeta ----------
   const detectCardType = (numbersOnly) => {
@@ -223,14 +318,23 @@ export default function Habitaciones() {
   // ---------- Render ----------
   return (
     <section className="min-h-screen bg-zinc-950 text-white py-0 px-0">
-      {/* Toast flotante */}
       {mostrarToast && (
         <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50">
-    <div className="bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg text-center animate-fadeIn">  
+          <div className="bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg text-center animate-fadeIn">
             Inicie sesión para reservar
           </div>
         </div>
       )}
+
+      {/* ⚠️ Mensaje de capacidad excedida */}
+{mensajeCapacidad && (
+  <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-[9999]">
+    <div className="bg-yellow-400 text-black px-6 py-3 rounded-lg shadow-lg text-center animate-fadeIn font-semibold">
+      {mensajeCapacidad}
+    </div>
+  </div>
+)}
+
 
       <div className="w-full h-64 md:h-80 lg:h-96 overflow-hidden">
         <img src={portadaHabitaciones} alt="Portada habitaciones" className="w-full h-full object-cover object-center" />
@@ -299,7 +403,7 @@ export default function Habitaciones() {
                   type="number"
                   min="1"
                   value={reserva.adultos}
-                  onChange={(e) => setReserva({ ...reserva, adultos: e.target.value })}
+                  onChange={(e) => handleCambioPersonas("adultos", e.target.value)}
                   className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white"
                 />
               </div>
@@ -309,25 +413,33 @@ export default function Habitaciones() {
                   type="number"
                   min="0"
                   value={reserva.ninos}
-                  onChange={(e) => setReserva({ ...reserva, ninos: e.target.value })}
+                  onChange={(e) => handleCambioPersonas("ninos", e.target.value)}
                   className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white"
                 />
               </div>
             </div>
-            <div className="flex justify-end mt-6 gap-4">
-              <button onClick={() => setMostrarCalendario(false)} className="bg-gray-600 hover:bg-gray-700 text-black px-5 py-2 rounded-lg">
-                Cancelar
-              </button>
-              <button
-                onClick={() => {
-                  setMostrarCalendario(false);
-                  setPaso(1);
-                }}
-                className="bg-white hover:bg-gray-400 text-black px-5 py-2 rounded-lg"
-              >
-                Continuar
-              </button>
-            </div>
+<div className="flex justify-end mt-6 gap-4">
+  <button onClick={() => setMostrarCalendario(false)} className="bg-gray-600 hover:bg-gray-700 text-black px-5 py-2 rounded-lg">
+    Cancelar
+  </button>
+  <button
+    onClick={() => {
+      if (!excedeCapacidad) {
+        setMostrarCalendario(false);
+        setPaso(1);
+      }
+    }}
+    className={`px-5 py-2 rounded-lg font-semibold transition-all ${
+      excedeCapacidad
+        ? "bg-gray-500 cursor-not-allowed text-gray-300"
+        : "bg-green-600 hover:bg-green-700 text-white"
+    }`}
+    disabled={excedeCapacidad}
+  >
+    Continuar
+  </button>
+</div>
+
           </div>
         </div>
       )}
@@ -428,17 +540,18 @@ export default function Habitaciones() {
               >
                 Volver
               </button>
-              <button
-                onClick={handleConfirmarPago}
-                disabled={!isPaymentReady()}
-                className={`px-5 py-2 rounded-lg font-semibold transition ${
-                  isPaymentReady()
-                    ? "bg-white hover:bg-gray-400 text-black"
-                    : "bg-gray-500 cursor-not-allowed text-gray-300"
-                }`}
-              >
-                Confirmar Pago
-              </button>
+<button
+  onClick={handleConfirmarPago}
+  disabled={!isPaymentReady() || enviandoReserva}
+  className={`px-5 py-2 rounded-lg font-semibold transition ${
+    !isPaymentReady() || enviandoReserva
+      ? "bg-gray-500 cursor-not-allowed text-gray-300"
+      : "bg-white hover:bg-gray-400 text-black"
+  }`}
+>
+  {enviandoReserva ? "Procesando..." : "Confirmar Pago"}
+</button>
+
             </div>
           </div>
         </div>
