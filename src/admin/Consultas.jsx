@@ -59,6 +59,7 @@ export default function Consultas() {
             <table className="w-full border border-zinc-700 text-gray-300 text-lg">
               <thead className="bg-zinc-800">
                 <tr>
+                  <th className="py-4 px-6 border-b border-zinc-700 text-left">N* Consulta</th>
                   <th className="py-4 px-6 border-b border-zinc-700 text-left">Email</th>
                   <th className="py-4 px-6 border-b border-zinc-700 text-left">Nombre</th>
                   <th className="py-4 px-6 border-b border-zinc-700 text-left">Teléfono</th>
@@ -73,6 +74,7 @@ export default function Consultas() {
                     key={r.id}
                     className="hover:bg-zinc-800 transition border-b border-zinc-800"
                   >
+                    <td className="py-4 px-6">{r.id}</td>
                     <td className="py-4 px-6">{r.email}</td>
                     <td className="py-4 px-6">{r.nombre}</td>
                     <td className="py-4 px-6">{r.telefono || "N/A"}</td>
@@ -127,7 +129,7 @@ export default function Consultas() {
                     className="hover:bg-zinc-800 transition border-b border-zinc-800"
                   >
                     <td className="py-4 px-6">{r.id_consulta}</td>
-                    <td className="py-4 px-6">{r.id_operador}</td>
+                    <td className="py-4 px-6">{r.operador}</td>
                     <td className="py-4 px-6">{r.mensaje}</td>
                     <td className="py-4 px-6">
                       {r.fecha_respuesta
