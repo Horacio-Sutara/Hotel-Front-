@@ -320,6 +320,94 @@ export default function UsuariosAdmin() {
       {renderTabla("Operadores", operadores)}
       {renderTabla("Administradores", administradores)}
 
+      {/* 🔹 Modal Editar Usuario */}
+{mostrarModal && usuarioSeleccionado && (
+  <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center">
+    <div className="bg-gray-900 text-white rounded-lg p-6 w-[420px] border border-gray-700">
+      <h3 className="text-xl font-semibold mb-4 text-center">
+        Editar Usuario
+      </h3>
+      <form onSubmit={actualizarUsuario} className="space-y-3">
+        <input
+          type="text"
+          value={usuarioSeleccionado.nombre}
+          onChange={(e) =>
+            setUsuarioSeleccionado({
+              ...usuarioSeleccionado,
+              nombre: e.target.value,
+            })
+          }
+          className="w-full bg-gray-800 p-2 rounded"
+        />
+        <input
+          type="text"
+          value={usuarioSeleccionado.apellido}
+          onChange={(e) =>
+            setUsuarioSeleccionado({
+              ...usuarioSeleccionado,
+              apellido: e.target.value,
+            })
+          }
+          className="w-full bg-gray-800 p-2 rounded"
+        />
+        <input
+          type="email"
+          value={usuarioSeleccionado.correo}
+          onChange={(e) =>
+            setUsuarioSeleccionado({
+              ...usuarioSeleccionado,
+              correo: e.target.value,
+            })
+          }
+          className="w-full bg-gray-800 p-2 rounded"
+        />
+        <input
+          type="text"
+          value={usuarioSeleccionado.telefono || ""}
+          onChange={(e) =>
+            setUsuarioSeleccionado({
+              ...usuarioSeleccionado,
+              telefono: e.target.value,
+            })
+          }
+          className="w-full bg-gray-800 p-2 rounded"
+        />
+        <select
+          value={usuarioSeleccionado.rol}
+          onChange={(e) =>
+            setUsuarioSeleccionado({
+              ...usuarioSeleccionado,
+              rol: e.target.value,
+            })
+          }
+          className="w-full bg-gray-800 p-2 rounded"
+        >
+          <option value="CLIENTE">Cliente</option>
+          <option value="OPERADOR">Operador</option>
+          <option value="ADMINISTRADOR">Administrador</option>
+        </select>
+
+        <div className="flex justify-between mt-4">
+          <button
+            type="submit"
+            className="bg-yellow-600 px-4 py-2 rounded hover:bg-yellow-500"
+          >
+            Guardar
+          </button>
+          <button
+            type="button"
+            onClick={() => setMostrarModal(false)}
+            className="bg-red-700 px-4 py-2 rounded hover:bg-red-600"
+          >
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
+
+
       {/* 🔹 Modal Crear Usuario */}
       {mostrarCrear && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center">

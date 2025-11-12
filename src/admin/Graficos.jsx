@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import {
   BarChart,
   Bar,
@@ -12,30 +13,53 @@ import {
 } from "recharts";
 
 export default function Graficos() {
-  const ingresosPorMes = [
-    { mes: "Enero", ingresos: 120000 },
-    { mes: "Febrero", ingresos: 95000 },
-    { mes: "Marzo", ingresos: 140000 },
-    { mes: "Abril", ingresos: 110000 },
-    { mes: "Mayo", ingresos: 160000 },
-    { mes: "Junio", ingresos: 125000 },
-  ];
+  const [ingresosPorMes, setIngresosPorMes] = useState([]);
+  const [ocupacionPorTipo, setOcupacionPorTipo] = useState([]);
 
-  const ocupacionPorTipo = [
-    { tipo: "Estandar", ocupadas: 12 },
-    { tipo: "Deluxe", ocupadas: 8 },
-    { tipo: "Suite", ocupadas: 4 },
-  ];
+  useEffect(() => {
+    const fetchEstadisticas = async () => {
+      try {
+        // ---- Obtener ingresos por mes ----
+        const resIngresos = await fetch("http://localhost:5000/api/estadisticas/ingresos_mes");
+        const dataIngresos = await resIngresos.json();
+
+        // El backend devuelve un objeto { mes: monto, ... }
+        // Lo convertimos a un array compatible con Recharts
+        const mesesNombres = [
+          "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+          "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+        ];
+
+        const ingresosArray = Object.entries(dataIngresos[0] || dataIngresos)
+          .map(([mes, monto]) => ({
+            mes: mesesNombres[parseInt(mes) - 1] || mes,
+            ingresos: monto,
+          }));
+
+        setIngresosPorMes(ingresosArray);
+
+        // ---- Obtener ocupación por tipo ----
+        const resOcupacion = await fetch("http://localhost:5000/api/estadisticas/habitaciones_ocupadas_por_tipo");
+        const dataOcupacion = await resOcupacion.json();
+
+        // dataOcupacion debería venir ya como array de objetos [{tipo, ocupadas}, ...]
+        setOcupacionPorTipo(dataOcupacion);
+
+      } catch (error) {
+        console.error("Error al obtener estadísticas:", error);
+      }
+    };
+
+    fetchEstadisticas();
+  }, []);
 
   return (
     <div className="bg-zinc-900 p-6 rounded-lg shadow-lg">
-      <h2 className="text-2xl font-semibold mb-4 text-white"> Estadísticas del Hotel</h2>
+      <h2 className="text-2xl font-semibold mb-4 text-white">Estadísticas del Hotel</h2>
 
-      {/* Gráfico de ingresos */}
+      {/* --- Gráfico de Ingresos --- */}
       <div className="mb-10">
-        <h3 className="text-lg font-semibold text-gray-300 mb-3">
-          Ingresos por Mes
-        </h3>
+        <h3 className="text-lg font-semibold text-gray-300 mb-3">Ingresos por Mes</h3>
         <div className="bg-zinc-800 p-4 rounded-lg">
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={ingresosPorMes}>
@@ -62,7 +86,7 @@ export default function Graficos() {
         </div>
       </div>
 
-      {/* Gráfico de ocupación */}
+      {/* --- Gráfico de Ocupación --- */}
       <div>
         <h3 className="text-lg font-semibold text-gray-300 mb-3">
           Habitaciones Ocupadas por Tipo
