@@ -67,6 +67,26 @@ const Navbar = () => {
             </li>
           )}
 
+          {/* Botón de Panel (solo si hay usuario) */}
+{user && (user.tipo === "ADMINISTRADOR" || user.tipo === "OPERADOR") && (
+  <li>
+    <button
+      onClick={() =>
+        navigate(
+          user.tipo === "ADMINISTRADOR"
+            ? "/admin/habitaciones"
+            : "/operador/mapa"
+        )
+      }
+      className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-lg transition-all"
+    >
+      {user.tipo === "ADMINISTRADOR"
+        ? "Panel administrador"
+        : "Panel operador"}
+    </button>
+  </li>
+)}
+
           {/* Si no hay usuario, mostrar botón de inicio de sesión */}
           {!user && (
             <li>

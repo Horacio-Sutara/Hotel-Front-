@@ -11,14 +11,20 @@ export default function PanelAdmin() {
   const [mostrarMenu, setMostrarMenu] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem("usuario"));
-    if (storedUser && storedUser.tipo === "ADMINISTRADOR") {
-      setUser(storedUser);
-    } else {
-      navigate("/login");
-    }
-  }, [navigate]);
+useEffect(() => {
+  const storedUser = JSON.parse(localStorage.getItem("usuario"));
+  if (storedUser && storedUser.tipo === "ADMINISTRADOR") {
+    setUser(storedUser);
+  } else {
+    navigate("/login");
+    return;
+  }
+
+  // 🔹 Redirigir automáticamente a /admin/habitaciones si entra a /admin
+  if (window.location.pathname === "/admin") {
+    navigate("/admin/habitaciones");
+  }
+}, [navigate]);
 
   const handleLogout = () => {
     localStorage.removeItem("usuario");
@@ -30,7 +36,13 @@ export default function PanelAdmin() {
     <div className="min-h-screen bg-black text-white">
       {/* 🔹 Barra superior */}
       <header className="flex justify-between items-center bg-zinc-900 px-8 py-4 shadow-md">
-        <h1 className="text-2xl font-bold text-white">Hotel Ramolia</h1>
+<Link
+  to="/"
+  className="text-2xl font-bold text-white hover:text-gray-300 transition-colors duration-200"
+>
+  Hotel Ramolia
+</Link>
+
         <h2 className="text-lg text-gray-400">Panel de Administración</h2>
 
         {/* Icono de perfil */}
