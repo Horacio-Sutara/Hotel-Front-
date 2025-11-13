@@ -8,7 +8,7 @@ import "react-calendar/dist/Calendar.css";
 import "../calendarDark.css";
 
 export default function Habitaciones() {
-  const [tipo, setTipo] = useState("estandar");
+  const [tipo, setTipo] = useState("");
   const [mostrarCalendario, setMostrarCalendario] = useState(false);
   const [mostrarToast, setMostrarToast] = useState(false);
   const [mensajeCapacidad, setMensajeCapacidad] = useState("");
@@ -51,62 +51,44 @@ export default function Habitaciones() {
   
   const pasosTexto = ["Revisar Reserva", "Método de Pago"];
 
-  // ---------- Habitaciones predeterminadas ----------
-  const habitacionesPredeterminadas = {
-    estandar: {
-      nombre: "Habitación Estándar",
-      img: habitacionEstandar,
-      descripcion: "Habitación cómoda para 2 personas con baño privado y Wi-Fi.",
-      precio: "$120.000 por noche",
-      capacidad: 2,
-    },
-    deluxe: {
-      nombre: "Habitación Deluxe",
-      img: habitacionDeluxe,
-      descripcion: "Habitación espaciosa con balcón, ideal para 3 personas.",
-      precio: "$180.000 por noche",
-      capacidad: 3,
-    },
-    suite: {
-      nombre: "Suite Premium",
-      img: habitacionSuite,
-      descripcion: "Suite de lujo con vista panorámica y espacio para 4 personas.",
-      precio: "$250.000 por noche",
-      capacidad: 4,
-    },
-  };
 
-  const [habitaciones, setHabitaciones] = useState(habitacionesPredeterminadas);
+  const [habitaciones, setHabitaciones] =  useState({});
+
 
   // ---------- Traer habitaciones de la API ----------
-  useEffect(() => {
-    const fetchHabitaciones = async () => {
-      try {
-        const res = await fetch("http://127.0.0.1:5000/api/habitaciones");
-        const data = await res.json();
-        const nuevasHabitaciones = {};
-        data.forEach((h) => {
-          if (h.estado !== "DISPONIBLE") return;
-          let imagen = habitacionEstandar;
-          const tipoHab = (h.tipo || h.nombre || "").toLowerCase();
-          if (tipoHab.includes("deluxe")) imagen = habitacionDeluxe;
-          else if (tipoHab.includes("suite")) imagen = habitacionSuite;
-          else if (tipoHab.includes("estándar") || tipoHab.includes("estandar")) imagen = habitacionEstandar;
-          nuevasHabitaciones[`api_${h.id}`] = {
-            nombre:h.nombre,
-            img: h.imagen_url || imagen,
-            descripcion: h.descripcion,
-            precio: "$"+h.precio+" por noche",
-            capacidad: h.capacidad,
-          };
-        });
-        setHabitaciones({ ...habitacionesPredeterminadas, ...nuevasHabitaciones });
-      } catch (error) {
-        console.error("Error al obtener habitaciones de la API:", error);
-      }
-    };
-    fetchHabitaciones();
-  }, []);
+useEffect(() => {
+  const fetchHabitaciones = async () => {
+    try {
+      const res = await fetch("http://127.0.0.1:5000/api/habitaciones");
+      const data = await res.json();
+      const nuevasHabitaciones = {};
+      data.forEach((h) => {
+        if (h.estado !== "DISPONIBLE") return;
+        let imagen = habitacionEstandar;
+        const tipoHab = (h.tipo || h.nombre || "").toLowerCase();
+        if (tipoHab.includes("deluxe")) imagen = habitacionDeluxe;
+        else if (tipoHab.includes("suite")) imagen = habitacionSuite;
+        else if (tipoHab.includes("estándar") || tipoHab.includes("estandar")) imagen = habitacionEstandar;
+        nuevasHabitaciones[`api_${h.id}`] = {
+          nombre: h.nombre,
+          img: h.imagen_url || imagen,
+          descripcion: h.descripcion,
+          precio: "$" + h.precio + " por noche",
+          capacidad: h.capacidad,
+        };
+      });
+      setHabitaciones(nuevasHabitaciones);
+
+      // 🔹 Establecer el primer tipo automáticamente
+      const primeraClave = Object.keys(nuevasHabitaciones)[0];
+      if (primeraClave) setTipo(primeraClave);
+    } catch (error) {
+      console.error("Error al obtener habitaciones de la API:", error);
+    }
+  };
+  fetchHabitaciones();
+}, []);
+
 
   const habitacion = habitaciones[tipo];
 
