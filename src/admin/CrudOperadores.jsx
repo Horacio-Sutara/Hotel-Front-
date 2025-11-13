@@ -95,80 +95,104 @@ export default function UsuariosAdmin() {
     }
   };
 
-  // 🔹 Crear nuevo usuario
-  const crearUsuario = async (e) => {
-    e.preventDefault();
-    if (bloqueoClick) return;
-    setBloqueoClick(true);
-    setMensaje("");
+// 🔹 Crear nuevo usuario
+const crearUsuario = async (e) => {
+  e.preventDefault();
+  if (bloqueoClick) return;
+  setBloqueoClick(true);
+  setMensaje("");
 
-    const {
-      nombre,
-      apellido,
-      pais,
-      correo,
-      numero_documento,
-      contraseña,
-      confirmar,
-      telefono,
-      rol,
-    } = nuevoUsuario;
+  const {
+    nombre,
+    apellido,
+    pais,
+    correo,
+    numero_documento,
+    contraseña,
+    confirmar,
+    telefono,
+    rol,
+  } = nuevoUsuario;
 
-    if (
-      !nombre ||
-      !apellido ||
-      !pais ||
-      !correo ||
-      !numero_documento ||
-      !contraseña ||
-      !confirmar
-    ) {
-      setMensaje("Todos los campos obligatorios deben completarse");
-      setBloqueoClick(false);
-      return;
-    }
+  // 🔸 Validaciones básicas
+  if (
+    !nombre ||
+    !apellido ||
+    !pais ||
+    !correo ||
+    !numero_documento ||
+    !contraseña ||
+    !confirmar
+  ) {
+    setMensaje("Todos los campos obligatorios deben completarse");
+    setBloqueoClick(false);
+    return;
+  }
 
-    if (contraseña !== confirmar) {
-      setMensaje("Las contraseñas no coinciden");
-      setBloqueoClick(false);
-      return;
-    }
+  // Validar formato de correo
+  const correoRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!correoRegex.test(correo)) {
+    setMensaje("El correo ingresado no es válido");
+    setBloqueoClick(false);
+    return;
+  }
 
-    const userData = {
-      id_admin: adminId,
-      nombre,
-      apellido,
-      correo,
-      contraseña,
-      tipo_documento: "DNI",
-      numero_documento,
-      pais_emision: pais,
-      telefono: telefono || "",
-      rol,
-    };
+  // Validar que el documento sea numérico
+  if (isNaN(numero_documento)) {
+    setMensaje("El número de documento debe contener solo números");
+    setBloqueoClick(false);
+    return;
+  }
 
-    try {
-      const response = await fetch("http://127.0.0.1:5000/api/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(userData),
-      });
+  // Validar longitud mínima de contraseña
+  if (contraseña.length < 4) {
+    setMensaje("La contraseña debe tener al menos 4 caracteres");
+    setBloqueoClick(false);
+    return;
+  }
 
-      const data = await response.json();
+  // Validar coincidencia de contraseñas
+  if (contraseña !== confirmar) {
+    setMensaje("Las contraseñas no coinciden");
+    setBloqueoClick(false);
+    return;
+  }
 
-      if (response.ok) {
-        setMensaje("Usuario creado con éxito");
-        setMostrarCrear(false);
-        obtenerUsuarios();
-      } else {
-        setMensaje(data.error || "Error al crear usuario");
-      }
-    } catch {
-      setMensaje("Error en la conexión con la API");
-    } finally {
-      setBloqueoClick(false);
-    }
+  const userData = {
+    id_admin: adminId,
+    nombre,
+    apellido,
+    correo,
+    contraseña,
+    tipo_documento: "DNI",
+    numero_documento,
+    pais_emision: pais,
+    telefono: telefono || "",
+    rol,
   };
+
+  try {
+    const response = await fetch("http://127.0.0.1:5000/api/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(userData),
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      setMensaje("Usuario creado con éxito");
+      setMostrarCrear(false);
+      obtenerUsuarios();
+    } else {
+      setMensaje(data.error || "Error al crear usuario");
+    }
+  } catch {
+    setMensaje("Error en la conexión con la API");
+  } finally {
+    setBloqueoClick(false);
+  }
+};
 
   // 🔹 Cambiar activo/inactivo
   const cambiarActivo = async (usuario) => {
@@ -408,130 +432,144 @@ export default function UsuariosAdmin() {
 )}
 
 
-      {/* 🔹 Modal Crear Usuario */}
-      {mostrarCrear && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center">
-          <div className="bg-gray-900 text-white rounded-lg p-6 w-[420px] border border-gray-700">
-            <h3 className="text-xl font-semibold mb-4 text-center">
-              Crear Nuevo Usuario
-            </h3>
-            <form onSubmit={crearUsuario} className="space-y-3">
-              <input
-                type="text"
-                placeholder="Nombre"
-                value={nuevoUsuario.nombre}
-                onChange={(e) =>
-                  setNuevoUsuario({ ...nuevoUsuario, nombre: e.target.value })
-                }
-                className="w-full bg-gray-800 p-2 rounded"
-              />
-              <input
-                type="text"
-                placeholder="Apellido"
-                value={nuevoUsuario.apellido}
-                onChange={(e) =>
-                  setNuevoUsuario({ ...nuevoUsuario, apellido: e.target.value })
-                }
-                className="w-full bg-gray-800 p-2 rounded"
-              />
-              <input
-                type="text"
-                placeholder="País"
-                value={nuevoUsuario.pais}
-                onChange={(e) =>
-                  setNuevoUsuario({ ...nuevoUsuario, pais: e.target.value })
-                }
-                className="w-full bg-gray-800 p-2 rounded"
-              />
-              <input
-                type="email"
-                placeholder="Correo"
-                value={nuevoUsuario.correo}
-                onChange={(e) =>
-                  setNuevoUsuario({ ...nuevoUsuario, correo: e.target.value })
-                }
-                className="w-full bg-gray-800 p-2 rounded"
-              />
-              <input
-                type="text"
-                placeholder="DNI"
-                value={nuevoUsuario.numero_documento}
-                onChange={(e) =>
-                  setNuevoUsuario({
-                    ...nuevoUsuario,
-                    numero_documento: e.target.value,
-                  })
-                }
-                className="w-full bg-gray-800 p-2 rounded"
-              />
-              <input
-                type="text"
-                placeholder="Teléfono (opcional)"
-                value={nuevoUsuario.telefono}
-                onChange={(e) =>
-                  setNuevoUsuario({
-                    ...nuevoUsuario,
-                    telefono: e.target.value,
-                  })
-                }
-                className="w-full bg-gray-800 p-2 rounded"
-              />
-              <input
-                type="password"
-                placeholder="Contraseña"
-                value={nuevoUsuario.contraseña}
-                onChange={(e) =>
-                  setNuevoUsuario({
-                    ...nuevoUsuario,
-                    contraseña: e.target.value,
-                  })
-                }
-                className="w-full bg-gray-800 p-2 rounded"
-              />
-              <input
-                type="password"
-                placeholder="Confirmar contraseña"
-                value={nuevoUsuario.confirmar}
-                onChange={(e) =>
-                  setNuevoUsuario({
-                    ...nuevoUsuario,
-                    confirmar: e.target.value,
-                  })
-                }
-                className="w-full bg-gray-800 p-2 rounded"
-              />
+{/* 🔹 Modal Crear Usuario */}
+{mostrarCrear && (
+  <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
+    <div className="bg-gray-900 text-white rounded-lg p-6 w-[420px] border border-gray-700 relative">
+      <h3 className="text-xl font-semibold mb-4 text-center">
+        Crear Nuevo Usuario
+      </h3>
 
-              <select
-                value={nuevoUsuario.rol}
-                onChange={(e) =>
-                  setNuevoUsuario({ ...nuevoUsuario, rol: e.target.value })
-                }
-                className="w-full bg-gray-800 p-2 rounded"
-              >
-                <option value="CLIENTE">Cliente</option>
-                <option value="OPERADOR">Operador</option>
-                <option value="ADMINISTRADOR">Administrador</option>
-              </select>
-
-              <div className="flex justify-between mt-4">
-                <button
-                  type="submit"
-                  className="bg-green-700 px-4 py-2 rounded hover:bg-green-600"
-                >
-                  Crear
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMostrarCrear(false)}
-                  className="bg-red-700 px-4 py-2 rounded hover:bg-red-600"
-                >
-                  Cancelar
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {/* 🔸 Mensaje dentro del modal */}
+      {mensaje && (
+        <p
+          className={`text-center mb-3 font-semibold ${
+            mensaje.includes("éxito") || mensaje.includes("creado")
+              ? "text-green-400"
+              : "text-red-500"
+          }`}
+        >
+          {mensaje}
+        </p>
       )}
+
+      <form onSubmit={crearUsuario} className="space-y-3">
+        <input
+          type="text"
+          placeholder="Nombre"
+          value={nuevoUsuario.nombre}
+          onChange={(e) =>
+            setNuevoUsuario({ ...nuevoUsuario, nombre: e.target.value })
+          }
+          className="w-full bg-gray-800 p-2 rounded"
+        />
+        <input
+          type="text"
+          placeholder="Apellido"
+          value={nuevoUsuario.apellido}
+          onChange={(e) =>
+            setNuevoUsuario({ ...nuevoUsuario, apellido: e.target.value })
+          }
+          className="w-full bg-gray-800 p-2 rounded"
+        />
+        <input
+          type="text"
+          placeholder="País"
+          value={nuevoUsuario.pais}
+          onChange={(e) =>
+            setNuevoUsuario({ ...nuevoUsuario, pais: e.target.value })
+          }
+          className="w-full bg-gray-800 p-2 rounded"
+        />
+        <input
+          type="email"
+          placeholder="Correo"
+          value={nuevoUsuario.correo}
+          onChange={(e) =>
+            setNuevoUsuario({ ...nuevoUsuario, correo: e.target.value })
+          }
+          className="w-full bg-gray-800 p-2 rounded"
+        />
+        <input
+          type="text"
+          placeholder="DNI"
+          value={nuevoUsuario.numero_documento}
+          onChange={(e) =>
+            setNuevoUsuario({
+              ...nuevoUsuario,
+              numero_documento: e.target.value,
+            })
+          }
+          className="w-full bg-gray-800 p-2 rounded"
+        />
+        <input
+          type="text"
+          placeholder="Teléfono (opcional)"
+          value={nuevoUsuario.telefono}
+          onChange={(e) =>
+            setNuevoUsuario({
+              ...nuevoUsuario,
+              telefono: e.target.value,
+            })
+          }
+          className="w-full bg-gray-800 p-2 rounded"
+        />
+        <input
+          type="password"
+          placeholder="Contraseña"
+          value={nuevoUsuario.contraseña}
+          onChange={(e) =>
+            setNuevoUsuario({
+              ...nuevoUsuario,
+              contraseña: e.target.value,
+            })
+          }
+          className="w-full bg-gray-800 p-2 rounded"
+        />
+        <input
+          type="password"
+          placeholder="Confirmar contraseña"
+          value={nuevoUsuario.confirmar}
+          onChange={(e) =>
+            setNuevoUsuario({
+              ...nuevoUsuario,
+              confirmar: e.target.value,
+            })
+          }
+          className="w-full bg-gray-800 p-2 rounded"
+        />
+
+        <select
+          value={nuevoUsuario.rol}
+          onChange={(e) =>
+            setNuevoUsuario({ ...nuevoUsuario, rol: e.target.value })
+          }
+          className="w-full bg-gray-800 p-2 rounded"
+        >
+          <option value="CLIENTE">Cliente</option>
+          <option value="OPERADOR">Operador</option>
+          <option value="ADMINISTRADOR">Administrador</option>
+        </select>
+
+        <div className="flex justify-between mt-4">
+          <button
+            type="submit"
+            className="bg-green-700 px-4 py-2 rounded hover:bg-green-600"
+          >
+            Crear
+          </button>
+          <button
+            type="button"
+            onClick={() => setMostrarCrear(false)}
+            className="bg-red-700 px-4 py-2 rounded hover:bg-red-600"
+          >
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
     </div>
   );
 }
