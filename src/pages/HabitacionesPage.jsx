@@ -33,6 +33,8 @@ export default function Habitaciones() {
   const [metodoPago, setMetodoPago] = useState("TARJETA");
   const [enviandoReserva, setEnviandoReserva] = useState(false);
   const [diasOcupados, setDiasOcupados] = useState([]);
+  const [mostrarExito, setMostrarExito] = useState(false);
+
 
 
 
@@ -205,8 +207,13 @@ const handleConfirmarPago = async () => {
     if (!res.ok) throw new Error("Error al crear la reserva");
     const respuesta = await res.json();
 
-    alert("Reserva y pago confirmados correctamente!");
-    console.log("Reserva creada:", respuesta);
+setMostrarExito(true);
+console.log("Reserva creada:", respuesta);
+
+// 🔹 Espera unos segundos y luego redirige
+setTimeout(() => {
+  window.location.href = "http://localhost:5173/mis-reservas";
+}, 2500);
 
     // Reiniciar estados
     setPaso(0);
@@ -330,6 +337,26 @@ return (
         </div>
       </div>
     )}
+
+    {/* ✅ Modal de éxito */}
+{mostrarExito && (
+  <div className="fixed inset-0 bg-black/80 flex justify-center items-center z-[9999] animate-fadeIn">
+    <div className="bg-green-600 text-white rounded-2xl p-10 shadow-2xl text-center flex flex-col items-center space-y-4">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="w-16 h-16 text-white bg-green-700 rounded-full p-2 animate-bounce"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+      </svg>
+      <h2 className="text-2xl font-bold">¡Reserva confirmada!</h2>
+      <p className="text-lg text-white/90">Tu pago y reserva fueron procesados correctamente.</p>
+    </div>
+  </div>
+)}
+
 
     {/* Imagen portada */}
     <div className="w-full h-64 md:h-80 lg:h-96 overflow-hidden">
