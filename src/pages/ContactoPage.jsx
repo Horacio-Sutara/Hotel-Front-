@@ -148,15 +148,15 @@ export default function ContactoPage() {
             <div className="flex flex-col justify-center space-y-4 text-gray-300">
               <div className="flex items-center gap-3">
                 <span className="text-green-500 text-xl">📞</span>
-                <span>+54 11 1234-5678</span>
+                <span>426-8520</span>
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-green-500 text-xl">📧</span>
-                <span>hotel@ejemplo.com</span>
+                <span>info@hotelramolia.com</span>
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-green-500 text-xl">📍</span>
-                <span>Av. Corrientes 1234, Salta, Argentina</span>
+                <span>Campo Castañares, Salta, Argentina</span>
               </div>
             </div>
           </div>

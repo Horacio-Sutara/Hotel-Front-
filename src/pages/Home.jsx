@@ -18,7 +18,7 @@ const Home = () => {
       </section>
       {/* Footer */}
       <footer className="relative z-10 w-full bg-gray-900 bg-opacity-80 text-white text-center py-3 text-sm">
-        <div>Tel: (123) 456-7890 | Email: info@hotel.com | Dirección: Calle Ficticia 123</div>
+        <div>Tel: 426-8520 | Email: info@hotelramolia.com | Dirección: Campo Castañares</div>
       </footer>
       {/* Efecto hover para acercar la imagen */}
       <style>{`
