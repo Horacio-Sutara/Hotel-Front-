@@ -1,113 +1,151 @@
 import { useState, useEffect } from "react";
 
-const initialPagos = [
-  { id: 102, cliente: "Juan Pérez", habitacion: 102, monto: 120, metodo:"Online", limite:"Antes 14:30", estado:"Pendiente" }
-];
-
 export default function Pagos() {
-  const [pagos, setPagos] = useState([]);
+  const [facturas, setFacturas] = useState([]);
+  const [mensaje, setMensaje] = useState("");
 
+  // Obtener el operador logueado
+  const operador = JSON.parse(localStorage.getItem("usuario"));
+  const operadorId = operador?.id;
+
+  // Cargar facturas pendientes al montar
   useEffect(() => {
-    const stored = localStorage.getItem("pagos");
-    if (stored) {
-      setPagos(JSON.parse(stored));
-    } else {
-      setPagos(initialPagos);
-      localStorage.setItem("pagos", JSON.stringify(initialPagos));
-    }
-  }, []);
+    if (operadorId) obtenerFacturas();
+  }, [operadorId]);
 
-  const actualizarPagos = (nuevos) => {
-    setPagos(nuevos);
-    localStorage.setItem("pagos", JSON.stringify(nuevos));
+  const obtenerFacturas = async () => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/facturas/pendientes?empleado_id=${operadorId}`, {
+        method: "GET", // 🔹 Debe ser POST, no GET
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!response.ok) throw new Error("Error al obtener facturas");
+
+      const data = await response.json();
+
+      const facturasConDatos = data.map((f) => ({
+        id: f.id,
+        id_reserva: f.id_reserva,
+        cliente: `Cliente ${f.id_reserva}`,
+        habitacion: f.id_reserva,
+        monto: f.monto_total,
+        metodo: f.metodo_pago,
+        limite: generarFechaLimite(f.fecha_emision),
+        estado: f.estado_factura,
+      }));
+
+      setFacturas(facturasConDatos);
+    } catch (error) {
+      console.error(error);
+      setMensaje("Error al cargar las facturas.");
+    }
   };
 
-  const procesarPago = (id, aprobado) => {
-    const nuevosPagos = pagos.map(p =>
-      p.id === id ? { ...p, estado: aprobado ? "Aceptado" : "Rechazado" } : p
-    );
-    actualizarPagos(nuevosPagos);
+  const generarFechaLimite = (fechaEmision) => {
+    const fecha = new Date(fechaEmision);
+    fecha.setDate(fecha.getDate() + 3);
+    return fecha.toISOString().split("T")[0];
+  };
 
-    // 🔹 Sincroniza Reservas y Habitaciones
-    const reservas = JSON.parse(localStorage.getItem("reservas")) || [];
-    const habitaciones = JSON.parse(localStorage.getItem("habitaciones")) || {};
+  const actualizarEstadoFactura = async (id, nuevoEstado) => {
+    try {
+      const response = await fetch(`http://127.0.0.1:5000/api/facturas/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id,
+          estado_factura: nuevoEstado,
+          empleado_id:operadorId , // ✅ corregido
+        }),
+      });
 
-    const reserva = reservas.find(r => r.id === id);
-    if (reserva) {
-      if (aprobado) {
-        reserva.estado = "Pago confirmado - Habitación ocupada";
-        habitaciones[`hab-${reserva.habitacion}`] = {
-          estado: "ocupada",
-          cliente: reserva.cliente,
-          salida: reserva.salida
-        };
-      } else {
-        reserva.estado = "Pago rechazado";
-        habitaciones[`hab-${reserva.habitacion}`] = {
-          estado: "disponible",
-          cliente: "",
-          salida: ""
-        };
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMensaje(data.error || "Error al actualizar factura.");
+        return;
       }
-    }
 
-    localStorage.setItem("reservas", JSON.stringify(reservas));
-    localStorage.setItem("habitaciones", JSON.stringify(habitaciones));
+      setMensaje(data.mensaje || "Factura actualizada con éxito.");
+
+      // Actualiza el estado local
+      setFacturas((prev) =>
+        prev.map((f) =>
+          f.id === id ? { ...f, estado: nuevoEstado } : f
+        )
+      );
+    } catch (error) {
+      console.error(error);
+      setMensaje("Error de conexión con el servidor.");
+    }
   };
 
-  // 🔹 Borrar historial visual
-  const borrarHistorial = () => {
-    const filtrados = pagos.filter(p => p.estado === "Pendiente");
-    setPagos(filtrados);
+  const estaVencida = (fechaLimite) => {
+    const hoy = new Date();
+    const limite = new Date(fechaLimite);
+    return limite < hoy;
   };
 
   return (
-    <div>
-      <h2 className="text-2xl text-white font-bold mb-4 flex justify-between items-center">
-        Pagos
-        <button
-          onClick={borrarHistorial}
-          className="bg-red-600 px-3 py-1 rounded text-white text-sm"
-        >
-          Borrar historial
-        </button>
-      </h2>
+    <div className="text-white">
+      <h2 className="text-2xl font-bold mb-4">Facturas Pendientes</h2>
+
+      {mensaje && (
+        <p className="mb-2 bg-gray-700 text-center py-2 rounded">{mensaje}</p>
+      )}
 
       <table className="w-full text-center bg-gray-500 rounded overflow-hidden">
         <thead className="bg-white text-black">
           <tr>
-            <th>Reserva</th><th>Cliente</th><th>Habitación</th><th>Monto</th>
-            <th>Método</th><th>Límite</th><th>Acción</th><th>Estado</th>
+            <th>N° Factura</th>
+            <th>Cliente</th>
+            <th>Habitación</th>
+            <th>Monto</th>
+            <th>Método</th>
+            <th>Fecha Límite</th>
+            <th>Acción</th>
+            <th>Estado</th>
           </tr>
         </thead>
         <tbody>
-          {pagos.map(p => (
-            <tr key={p.id}>
-              <td>#{p.id}</td>
-              <td>{p.cliente}</td>
-              <td>{p.habitacion}</td>
-              <td>${p.monto}</td>
-              <td>{p.metodo}</td>
-              <td>{p.limite}</td>
-              <td className="flex justify-center gap-2 py-1">
-                <button
-                  onClick={() => procesarPago(p.id, true)}
-                  className="bg-green-600 text-white text-sm px-2 py-1 rounded disabled:opacity-50"
-                  disabled={p.estado !== "Pendiente"}
-                >
-                  Aceptar
-                </button>
-                <button
-                  onClick={() => procesarPago(p.id, false)}
-                  className="bg-red-600 text-white text-sm px-2 py-1 rounded disabled:opacity-50"
-                  disabled={p.estado !== "Pendiente"}
-                >
-                  Rechazar
-                </button>
+          {facturas.length === 0 ? (
+            <tr>
+              <td colSpan="8" className="py-3 text-center">
+                No hay facturas pendientes.
               </td>
-              <td>{p.estado}</td>
             </tr>
-          ))}
+          ) : (
+            facturas.map((f) => (
+              <tr key={f.id}>
+                <td>#{f.id_reserva}</td>
+                <td>{f.cliente}</td>
+                <td>{f.habitacion}</td>
+                <td>${f.monto}</td>
+                <td>{f.metodo}</td>
+                <td style={{ color: estaVencida(f.limite) ? "red" : "white" }}>
+                  {f.limite}
+                </td>
+                <td className="flex justify-center gap-2 py-1">
+                  <button
+                    onClick={() => actualizarEstadoFactura(f.id, "PAGADA")}
+                    className="bg-green-600 text-white text-sm px-2 py-1 rounded disabled:opacity-50"
+                    disabled={f.estado !== "PENDIENTE"}
+                  >
+                    Pagada
+                  </button>
+                  <button
+                    onClick={() => actualizarEstadoFactura(f.id, "ANULADA")}
+                    className="bg-red-600 text-white text-sm px-2 py-1 rounded disabled:opacity-50"
+                    disabled={f.estado !== "PENDIENTE"}
+                  >
+                    Anulada
+                  </button>
+                </td>
+                <td>{f.estado}</td>
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
     </div>

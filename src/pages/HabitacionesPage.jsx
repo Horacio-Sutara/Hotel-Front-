@@ -93,10 +93,10 @@ export default function Habitaciones() {
           else if (tipoHab.includes("suite")) imagen = habitacionSuite;
           else if (tipoHab.includes("estándar") || tipoHab.includes("estandar")) imagen = habitacionEstandar;
           nuevasHabitaciones[`api_${h.id}`] = {
-            nombre: h.nombre,
+            nombre:h.nombre,
             img: h.imagen_url || imagen,
             descripcion: h.descripcion,
-            precio: h.precio,
+            precio: "$"+h.precio+" por noche",
             capacidad: h.capacidad,
           };
         });

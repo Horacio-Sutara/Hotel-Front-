@@ -19,7 +19,7 @@ export default function MisReservas() {
           setLoading(false);
         });
     }
-  }, [user]);
+  }, []);
 
   const cancelarReserva = async (idReserva) => {
     if (window.confirm("¿Seguro que deseas cancelar esta reserva?")) {
