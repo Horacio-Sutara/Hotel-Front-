@@ -16,6 +16,9 @@ export default function CrudHabitaciones() {
   const [habitaciones, setHabitaciones] = useState([]);
   const [habitacionesCerradas, setHabitacionesCerradas] = useState([]);
   const [mostrarCerradas, setMostrarCerradas] = useState(false);
+  const [habitacionesMantenimiento, setHabitacionesMantenimiento] = useState([]);
+  const [mostrarMantenimiento, setMostrarMantenimiento] = useState(false);
+
 
   const [nueva, setNueva] = useState({
     nombre: "",
@@ -75,11 +78,31 @@ export default function CrudHabitaciones() {
     }
   };
 
+  // 🔹 Obtener habitaciones en mantenimiento
+const fetchHabitacionesMantenimiento = async () => {
+  try {
+    const res = await fetch("http://127.0.0.1:5000/api/habitaciones");
+    const data = await res.json();
+    const mantenimiento = data.filter((h) => h.estado === "MANTENIMIENTO");
+    setHabitacionesMantenimiento(mantenimiento);
+  } catch (error) {
+    console.error("Error al obtener habitaciones en mantenimiento:", error);
+  }
+};
+
+
   // 🔹 Alternar mostrar u ocultar lista de cerradas
   const handleMostrarCerradas = () => {
     if (!mostrarCerradas) fetchHabitacionesCerradas();
     setMostrarCerradas(!mostrarCerradas);
   };
+
+  // 🔹 Alternar mostrar u ocultar lista de mantenimiento
+const handleMostrarMantenimiento = () => {
+  if (!mostrarMantenimiento) fetchHabitacionesMantenimiento();
+  setMostrarMantenimiento(!mostrarMantenimiento);
+};
+
 
   useEffect(() => {
     fetchHabitacionesActivas();
@@ -359,6 +382,102 @@ export default function CrudHabitaciones() {
       >
         {mostrarCerradas ? "Ocultar habitaciones cerradas" : "Mostrar habitaciones cerradas"}
       </button>
+
+      {/* 🔹 Botón para mostrar/ocultar mantenimiento */}
+<button
+  onClick={handleMostrarMantenimiento}
+  className="mb-4 bg-yellow-700 hover:bg-yellow-600 text-white px-4 py-2 rounded-md transition ml-2"
+>
+  {mostrarMantenimiento
+    ? "Ocultar habitaciones en mantenimiento"
+    : "Mostrar habitaciones en mantenimiento"}
+</button>
+
+{/* 🔹 Habitaciones en mantenimiento */}
+{mostrarMantenimiento && (
+  <div className="bg-yellow-900 p-4 rounded-lg text-white mt-4">
+    <h2 className="text-2xl font-semibold mb-4">Habitaciones en mantenimiento</h2>
+    {habitacionesMantenimiento.length === 0 ? (
+      <p className="text-zinc-300">No hay habitaciones en mantenimiento.</p>
+    ) : (
+      <ul>
+        {habitacionesMantenimiento.map((h) => (
+          <li
+            key={h.id}
+            className="flex justify-between items-center bg-zinc-800 p-2 rounded mb-2"
+          >
+            {editando === h.id ? (
+              <div className="flex flex-col gap-1 w-full">
+                <input
+                  type="text"
+                  value={editData.nombre || ""}
+                  onChange={(e) => setEditData({ ...editData, nombre: e.target.value })}
+                  className="bg-zinc-700 px-2 py-1 rounded"
+                />
+                <input
+                  type="number"
+                  value={editData.precio || ""}
+                  onChange={(e) => setEditData({ ...editData, precio: e.target.value })}
+                  className="bg-zinc-700 px-2 py-1 rounded"
+                />
+                <select
+                  value={editData.estado || "MANTENIMIENTO"}
+                  onChange={(e) => setEditData({ ...editData, estado: e.target.value })}
+                  className="bg-zinc-700 px-2 py-1 rounded"
+                >
+                  <option value="MANTENIMIENTO">Mantenimiento</option>
+                  <option value="DISPONIBLE">Disponible</option>
+                  <option value="CERRADA">Cerrada</option>
+                </select>
+                <div className="flex gap-2 mt-1">
+                  <button
+                    onClick={() => guardarEdicion(h.id)}
+                    className="bg-green-600 px-2 py-1 rounded"
+                  >
+                    <Check size={14} />
+                  </button>
+                  <button
+                    onClick={() => setEditando(null)}
+                    className="bg-red-600 px-2 py-1 rounded"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div>
+                  <p className="font-semibold">{h.nombre}</p>
+                  <p>Tipo: {h.tipo}</p>
+                  <p>Estado: {h.estado}</p>
+                  <p>Precio: ${h.precio}</p>
+                  <p>Capacidad: {h.capacidad}</p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setEditando(h.id);
+                      setEditData(h);
+                    }}
+                    className="text-blue-400 hover:text-blue-500"
+                  >
+                    <Edit3 size={16} />
+                  </button>
+                  <button
+                    onClick={() => handleCerrarHabitacion(h.id)}
+                    className="text-red-500 hover:text-red-600"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </>
+            )}
+          </li>
+        ))}
+      </ul>
+    )}
+  </div>
+)}
 
       {/* 🔹 Habitaciones cerradas */}
       {mostrarCerradas && (
