@@ -42,8 +42,12 @@ export default function Graficos() {
         const resOcupacion = await fetch("http://localhost:5000/api/estadisticas/habitaciones_ocupadas_por_tipo");
         const dataOcupacion = await resOcupacion.json();
 
-        // dataOcupacion debería venir ya como array de objetos [{tipo, ocupadas}, ...]
-        setOcupacionPorTipo(dataOcupacion);
+        const ocupacionArray = Object.entries(dataOcupacion).map(([tipo, ocupadas]) => ({
+          tipo,
+          ocupadas
+        }));
+
+        setOcupacionPorTipo(ocupacionArray);
 
       } catch (error) {
         console.error("Error al obtener estadísticas:", error);
