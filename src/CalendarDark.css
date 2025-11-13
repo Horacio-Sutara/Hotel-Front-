@@ -83,3 +83,11 @@
   background: yellow !important; /* amarillo intenso */
   color: black !important; /* texto oscuro para contraste */
 }
+
+
+.react-calendar__tile:disabled {
+  background: #3f3f46 !important;
+  color: #a1a1aa !important;
+  cursor: not-allowed !important;
+  opacity: 0.6;
+}

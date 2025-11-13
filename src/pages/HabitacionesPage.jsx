@@ -63,7 +63,7 @@ useEffect(() => {
       const data = await res.json();
       const nuevasHabitaciones = {};
       data.forEach((h) => {
-        if (h.estado !== "DISPONIBLE") return;
+        if (h.estado ===  "CERRADA" || h.estado === "MANTENIMIENTO") return;
         let imagen = habitacionEstandar;
         const tipoHab = (h.tipo || h.nombre || "").toLowerCase();
         if (tipoHab.includes("deluxe")) imagen = habitacionDeluxe;
@@ -111,6 +111,8 @@ useEffect(() => {
     data.forEach((r) => {
       const start = new Date(r.fecha_entrada);
       const end = new Date(r.fecha_salida);
+      console.log("Rango de fechas:",r);
+      console.log(data);
       let current = new Date(start);
 
       // Generamos todas las fechas entre entrada y salida
@@ -407,12 +409,26 @@ return (
           <h3 className="text-2xl font-bold mb-4 text-center">
             Consultar Disponibilidad
           </h3>
-          <Calendar
-            onChange={(dates) => setReserva((r) => ({ ...r, fechas: dates }))}
-            selectRange={true}
-            value={reserva.fechas}
-            tileClassName={tileClassName}
-          />
+<Calendar
+  onChange={(dates) => setReserva((r) => ({ ...r, fechas: dates }))}
+  selectRange={true}
+  value={reserva.fechas}
+  tileClassName={tileClassName}
+  tileDisabled={({ date, view }) => {
+    if (view !== "month") return false; // Solo deshabilitamos días, no meses/años
+
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    // 🔹 Bloquear días anteriores al actual
+    if (date < hoy) return true;
+
+    // 🔹 Bloquear días ocupados que vienen del backend
+    const fechaISO = date.toISOString().split("T")[0];
+    return diasOcupados.includes(fechaISO);
+  }}
+/>
+
           <div className="mt-6 grid grid-cols-2 gap-4">
             <div>
               <label className="block text-gray-300 mb-1">Adultos</label>

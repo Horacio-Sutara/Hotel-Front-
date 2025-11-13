@@ -27,11 +27,11 @@ export default function Pagos() {
       const facturasConDatos = data.map((f) => ({
         id: f.id,
         id_reserva: f.id_reserva,
-        cliente: `Cliente ${f.id_reserva}`,
-        habitacion: f.id_reserva,
+        cliente: `Cliente ${f.cliente}`,
+        habitacion: f.habitacion,
         monto: f.monto_total,
         metodo: f.metodo_pago,
-        limite: generarFechaLimite(f.fecha_emision),
+        limite: f.fecha_limite,
         estado: f.estado_factura,
       }));
 
