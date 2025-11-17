@@ -4,7 +4,7 @@ import vista from "/vista.png";
 const Home = () => {
   return (
     <div className="relative min-h-screen flex flex-col justify-between overflow-hidden">
-      {/* Imagen de fondo con efecto hover */}
+      {/* Imagen de fondo con el efecto hover */}
       <div
         className="absolute inset-0 z-0 transition-transform duration-700 ease-in-out will-change-transform bg-cover"
         style={{ 
