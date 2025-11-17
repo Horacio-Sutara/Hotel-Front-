@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Plus, Trash2, Edit3, Check, X } from "lucide-react";
 
-// 🔹 Imágenes locales
+//  Imágenes locales
 import estandar1 from "../assets/estandar/foto1.png";
 import estandar2 from "../assets/estandar/foto2.png";
 import estandar3 from "../assets/estandar/foto3.png";
@@ -55,7 +55,7 @@ export default function CrudHabitaciones() {
     }
   };
 
-  // 🔹 Obtener habitaciones activas
+  //  Obtener habitaciones activas
   const fetchHabitacionesActivas = async () => {
     try {
       const res = await fetch("http://127.0.0.1:5000/api/habitaciones/activas");
@@ -66,7 +66,7 @@ export default function CrudHabitaciones() {
     }
   };
 
-  // 🔹 Obtener habitaciones cerradas
+  //  Obtener habitaciones cerradas
   const fetchHabitacionesCerradas = async () => {
     try {
       const res = await fetch("http://127.0.0.1:5000/api/habitaciones");
@@ -78,7 +78,7 @@ export default function CrudHabitaciones() {
     }
   };
 
-  // 🔹 Obtener habitaciones en mantenimiento
+  //  Obtener habitaciones en mantenimiento
 const fetchHabitacionesMantenimiento = async () => {
   try {
     const res = await fetch("http://127.0.0.1:5000/api/habitaciones");
@@ -91,13 +91,13 @@ const fetchHabitacionesMantenimiento = async () => {
 };
 
 
-  // 🔹 Alternar mostrar u ocultar lista de cerradas
+  //  Alternar mostrar u ocultar lista de cerradas
   const handleMostrarCerradas = () => {
     if (!mostrarCerradas) fetchHabitacionesCerradas();
     setMostrarCerradas(!mostrarCerradas);
   };
 
-  // 🔹 Alternar mostrar u ocultar lista de mantenimiento
+  //  Alternar mostrar u ocultar lista de mantenimiento
 const handleMostrarMantenimiento = () => {
   if (!mostrarMantenimiento) fetchHabitacionesMantenimiento();
   setMostrarMantenimiento(!mostrarMantenimiento);
@@ -108,7 +108,7 @@ const handleMostrarMantenimiento = () => {
     fetchHabitacionesActivas();
   }, []);
 
-  // 🔹 Agregar nueva habitación
+  //  Agregar nueva habitación
   const agregarHabitacion = async () => {
     if (!nueva.precio || !nueva.capacidad) {
       alert("El precio y la capacidad son obligatorios.");
@@ -156,7 +156,7 @@ const handleMostrarMantenimiento = () => {
     }
   };
 
-  // 🔹 Guardar edición
+  //  Guardar edición
   const guardarEdicion = async (id) => {
     try {
       const response = await fetch(
@@ -182,7 +182,7 @@ const handleMostrarMantenimiento = () => {
     }
   };
 
-  // 🔹 Cerrar habitación
+  //  Cerrar habitación
   const handleCerrarHabitacion = async (idHabitacion) => {
     try {
       const res = await fetch(
@@ -206,7 +206,7 @@ const handleMostrarMantenimiento = () => {
     }
   };
 
-  // 🔹 Restaurar habitación cerrada → disponible
+  //  Restaurar habitación cerrada → disponible
   const handleRestaurarHabitacion = async (idHabitacion) => {
     try {
       const res = await fetch(
@@ -295,7 +295,7 @@ const handleMostrarMantenimiento = () => {
         </button>
       </div>
 
-      {/* 🔹 Habitaciones activas */}
+      {/*  Habitaciones activas */}
       <div className="bg-zinc-900 p-4 rounded-lg text-white mb-6">
         <h2 className="text-2xl font-semibold mb-4">Habitaciones activas</h2>
         <ul>
@@ -375,7 +375,7 @@ const handleMostrarMantenimiento = () => {
         </ul>
       </div>
 
-      {/* 🔹 Botón para mostrar/ocultar cerradas */}
+      {/*  Botón para mostrar/ocultar cerradas */}
       <button
         onClick={handleMostrarCerradas}
         className="mb-4 bg-gray-800 hover:bg-gray-600 text-white px-4 py-2 rounded-md transition"
@@ -383,7 +383,7 @@ const handleMostrarMantenimiento = () => {
         {mostrarCerradas ? "Ocultar habitaciones cerradas" : "Mostrar habitaciones cerradas"}
       </button>
 
-      {/* 🔹 Botón para mostrar/ocultar mantenimiento */}
+      {/*  Botón para mostrar/ocultar mantenimiento */}
 <button
   onClick={handleMostrarMantenimiento}
   className="mb-4 bg-yellow-700 hover:bg-yellow-600 text-white px-4 py-2 rounded-md transition ml-2"
@@ -393,7 +393,7 @@ const handleMostrarMantenimiento = () => {
     : "Mostrar habitaciones en mantenimiento"}
 </button>
 
-{/* 🔹 Habitaciones en mantenimiento */}
+{/*  Habitaciones en mantenimiento */}
 {mostrarMantenimiento && (
   <div className="bg-yellow-900 p-4 rounded-lg text-white mt-4">
     <h2 className="text-2xl font-semibold mb-4">Habitaciones en mantenimiento</h2>
@@ -479,7 +479,7 @@ const handleMostrarMantenimiento = () => {
   </div>
 )}
 
-      {/* 🔹 Habitaciones cerradas */}
+      {/*  Habitaciones cerradas */}
       {mostrarCerradas && (
         <div className="bg-red-900 p-4 rounded-lg text-white">
           <h2 className="text-2xl font-semibold mb-4">Habitaciones cerradas</h2>
